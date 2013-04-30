@@ -55,7 +55,7 @@ for file in csvs.itervalues():
     ofp=open(outpath+'.prms','w')
     ofp.write('created by pyGDP_to_cbh.py\n')
     ofp.write(par+'      '+str(num_attribs)+'\n')
-    ofp.write('#'*40+'\r\n')
+    ofp.write('#'*40+'\n')
     
     print('...\t'),
     # loop through lines in input file, converting and writing to output, line by line
