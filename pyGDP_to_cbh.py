@@ -22,6 +22,7 @@ for cf in allfiles:
 
 print "Converting files to cbh format..."
 
+filenum=0
 for file in csvs.itervalues():
     
     print(file),
@@ -52,11 +53,11 @@ for file in csvs.itervalues():
     # open output file and write headers
     outpath=os.path.join(cbhdir,file[:-4])
     ofp=open(outpath+'.prms','w')
-    ofp.write('created by pyGDP_to_cbh.py\r\n')
-    ofp.write(par+'      '+str(num_attribs)+'\r\n')
+    ofp.write('created by pyGDP_to_cbh.py\n')
+    ofp.write(par+'      '+str(num_attribs)+'\n')
     ofp.write('#'*40+'\r\n')
     
-    print('...\t\t'),
+    print('...\t'),
     # loop through lines in input file, converting and writing to output, line by line
     for line in data:
         line=list(line)
@@ -78,9 +79,10 @@ for file in csvs.itervalues():
                 valueIn="{0:.4f}".format(value*(9.0/5.0)+32.0) # C to F
             newline.append(valueIn)
         
-        newline=' '.join(map(str,newline)) + '\r\n'
+        newline=' '.join(map(str,newline)) + '\n'
         ofp.write(newline)
     ofp.close()
-    print "Done"
+    filenum+=1.0
+    print str("{0:.0f}".format(100*filenum/len(csvs)))+"% Done"
 print "All files converted!"
     
