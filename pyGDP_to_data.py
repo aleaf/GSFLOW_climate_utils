@@ -122,6 +122,6 @@ for combination in combinations.iterkeys():
         ofp.write(newline)
     ofp.close()
     filenum+=1.0
-    print str("{0:.0f}".format(100*filenum/len(data[par])))+"% Done"
+    print str("{0:.0f}".format(100*filenum/len(combinations)+"% Done"
 print "All files converted!"
     
