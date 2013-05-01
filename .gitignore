@@ -7,3 +7,18 @@ examples
 Makefile
 outfiles
 pyGDP
+input
+outfiles copy
+shps
+pyGDP.egg-info
+pyGDP.py
+pyGDP.pyc
+setup.py
+README.txt
+setup.py
+build
+dist
+examples
+Makefile
+outfiles
+pyGDP
