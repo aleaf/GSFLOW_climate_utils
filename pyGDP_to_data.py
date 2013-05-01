@@ -97,29 +97,26 @@ for combination in combinations.iterkeys():
     # each new line in output has date, then tmax, tmin, prcp
     
     for i in range(len(data[par])):
-        newline=[]
+        
+        # explode date from first parameter and add
+        datetime=list(data[par][0])[0]
+        (year,month,day)=datetime[:10].split('-')
+        (h,m,s)=datetime[11:-1].split(':')
+        newline=map(int,[year,month,day,h,m,s])        
+        
+        # add values for each parameter in par_order
         for par in par_order:
+            
             line=list(data[par][i])
-            
-            if len(newline)==0:
-                # explode date and add
-                datetime=line[0]
-                (year,month,day)=datetime[:10].split('-')
-                (h,m,s)=datetime[11:-1].split(':')
-            
-                newline=map(int,[year,month,day,h,m,s])
-            
-            # convert units
-            else:
-                for value in line[1:]:
-                    if par=='prcp':
-                        if value<=5e-5:
-                            valueIn="{0:.2f}".format(0)
-                        else:
-                            valueIn="{0:.2f}".format(value/25.4) # mm/in
-                    elif 't' in par:
-                        valueIn="{0:.2f}".format(value*(9.0/5.0)+32.0) # C to F
-                    newline.append(valueIn)
+            for value in line[1:]:
+                if par=='prcp':
+                    if value<=5e-5:
+                        valueIn="{0:.2f}".format(0)
+                    else:
+                        valueIn="{0:.2f}".format(value/25.4) # mm/in
+                elif 't' in par:
+                    valueIn="{0:.2f}".format(value*(9.0/5.0)+32.0) # C to F
+                newline.append(valueIn)
                 
         newline='  '.join(map(str,newline)) + '\n'
         ofp.write(newline)
