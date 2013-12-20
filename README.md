@@ -36,9 +36,9 @@
 3. run **GSFLOW_control_generator.py** (generates a control file for each model run)
 
 4. Setup a generic run folder for HTCondor which includes:
- * a folder 'input' with all of the .data files (one for each run) and transp.day files (if using WRITE_CLIMATE module)
- * a folder 'control' with all of the .control files (one for each run)
- * a folder 'params' with all of the preprocess.params files (one for each run); also should contain a generic .params file that has information for all runs
+ * a subfolder 'input' with all of the .data files (one for each run) and transp.day files (if using WRITE_CLIMATE module)
+ * a subfolder 'control' with all of the .control files (one for each run)
+ * a subfolder 'params' with all of the preprocess.params files (one for each run); also should contain a generic .params file that has information for all runs
  * in root directory, all of the MODFLOW files
  * runner.py in the root directory
 
