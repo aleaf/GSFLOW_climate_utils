@@ -9,8 +9,8 @@
 **GDP_to_data.py**:
   Takes files downloaded by BEC_GPD.py and creates PRMS .data input files.
   
-  
-  
+    
+    
 #### Workflow for setting up GSFLOW input for multiple future climate scenarios:  
 
 1. run **pyGDP_to_data.py** to generate .data files for PRMS input
@@ -24,7 +24,8 @@
  * run **PRMS_data_interp.py** (requires **pandas** and also **PRMS_data_interp_functions.py** to run)
 
 
-2. run **GSFLOW_preprocess.py** (generates a preprocess.params file with information on the growing season, for each model run)
+2. run **GSFLOW_preprocess.py**
+  (generates a preprocess.params file with information on the growing season, for each model run)
 
   For variable growing season preprocessing (WRITE_CLIMATE mode):
  * made another template control file in the preprocessing directory that has 'WRITE_CLIMATE' instead of PRMS for model mode
