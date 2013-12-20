@@ -25,3 +25,4 @@ pyGDP
 *.pyc
 statvar/
 example_plots/
+example_results/
