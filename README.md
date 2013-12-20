@@ -62,7 +62,16 @@
 
 
 8. run HTCondor
+  
+  
 
-setup a folder for each type of result (see instructions) then run aggregate_GSFLOW.py on results folder     (aggregates results by variable.scenario (one csv for each, which a column of daily results for each GCM))
+#### Aggregating and visualizing GSFLOW results from multiple scenario runs
+1. run **aggregate_GSFLOW.py** on results folder
+  (aggregate and plot results from multiple GSFLOW climate scenario runs)
+   * aggregates results by variable.scenario (one csv for each, which a column of daily results for each GCM)
+   * assumes that all results are in zip files (one per run) within a specified *results_folder*
 
-run GSFLOW_plots.py to generate plots. Both aggregate_GSFLOW and GSFLOW_plots use functions stored in GSFLOW_utils.py. GSFLOW_utils requires the pandas module of Python to run.
+2. run **GSFLOW_plots.py** to generate plots. 
+  Both aggregate_GSFLOW and GSFLOW_plots use functions stored in **GSFLOW_utils.py**. 
+   * GSFLOW_utils requires the **pandas** module of Python to run.
+   * generates moving-window average time-series plots, box plots (e.g. comparing monthly avg or annual avg values two or more time periods), and annual average time-series plots
