@@ -22,3 +22,5 @@ examples
 Makefile
 outfiles
 pyGDP
+*.pyc
+statvar
