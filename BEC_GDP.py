@@ -2,19 +2,20 @@
 import os
 import pyGDP
 import time
+
 pyGDP=pyGDP.pyGDPwebProcessing()
 
-TestRun=False # turn this on to retrive a limited dataset for testing
+TestRun = True # turn this on to retrive a limited dataset for testing
 
-shapepath=os.path.join('shps','') # store all shapefiles here, as single zip files
-outpath=os.path.join('outfiles','') # outfiles and recfile will be saved here
-recfile='GDP_request_recfile.txt' # record of all files received
-attribute='CID' # attribute with unique identifier for each weather station
-realization='-01' # enter a string identifying the realization
-parameters=['prcp'] # tmin, tmax, prcp
+zipped_shapefiles = ['D:/ATLData/Fox-Wolf/hrus_final.zip'] # list of zipped shapefiles (one zip file per shapefile)
+outpath = os.path.join('D:/ATLData/Fox-Wolf/GDP/') # outfiles and recfile will be saved here
+recfile = 'D:/ATLData/Fox-Wolf/GDP/GDP_request_recfile.txt' # record of all files received
+attribute = 'GRID_CODE' # attribute with unique identifier for each weather station
+realization ='-01' # enter a string identifying the realization
+parameters = ['prcp', 'tmin', 'tmax']
 
 
-def restart_switch(outpath,recfile):
+def restart_switch(outpath, recfile):
     # Need to figure out how to recover from intentional crash
     try:
         recfile_info=open(outpath+recfile,'r').readlines()
@@ -23,12 +24,13 @@ def restart_switch(outpath,recfile):
     except IOError:
         return []
     
-recfile_info=restart_switch(outpath,recfile)    
+recfile_info = restart_switch(outpath, recfile)
+
 if len(recfile)==0:
     print "Recfile empty or no existing rec file found, starting from beginning..."
     
 if len(recfile_info)>0:
-    restart=True
+    restart = True
     print "restarting run from last file..."
     print "last URI and last datatype are:"    
     
@@ -36,7 +38,7 @@ if len(recfile_info)>0:
     for line in recfile_info:
         if 'usgs.gov' in line:
             rec_URIs.append(line[:-1])
-    last_URI=rec_URIs[-1]
+    last_URI = rec_URIs[-1]
     print last_URI
     
     rec_datatypes=[]
@@ -49,19 +51,16 @@ if len(recfile_info)>0:
     
 #upload all shapefiles in the shp folder if they don't exist
 
-files=os.listdir(shapepath)
-shapefiles=[f[:-4] for f in files if f.endswith('.zip')]
-
-GDPshapefiles=pyGDP.getShapefiles()
-for shp in shapefiles:
+GDPshapefiles = pyGDP.getShapefiles()
+for shp in zipped_shapefiles:
     try:
         print "uploading " + shp
-        pyGDP.uploadShapeFile(shapepath+shp+'.zip')
+        pyGDP.uploadShapeFile(shp)
     except:
         print "shapefile already exists on server"
         continue
 
-shapefiles=['upload:'+f[:-4] for f in files if f.endswith('.zip')]
+shapefiles=['upload:'+f[:-4] for f in zipped_shapefiles]
 
 shapefile=shapefiles[0] # for now just using one shapefile
 
@@ -72,7 +71,7 @@ values = pyGDP.getValues(shapefile, attribute)
 # Search for datasets
 print "Getting datasets and datatypes..."
 dataSetURIs = pyGDP.getDataSetURI(anyText='wicci')
-datasets=dataSetURIs[1][2][0:3] # this probably needs to be hard-coded based on results of line above
+datasets = dataSetURIs[1][2][0:3] # this probably needs to be hard-coded based on results of line above
 
 # in case of restart, trim already-processed entries from datasets
 if restart:
