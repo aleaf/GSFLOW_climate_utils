@@ -10,7 +10,13 @@ from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 import pdb
 
-message='\nGSFLOW_plots is called by entering:\npython GSFLOW_plots.py mode stat\n\nmode options: statvar, csv, ggo, ssf or uzf\nstat options: mean_monthly, mean_annual, Q10, Q90\n-or-\nTo plot everything, simply type "all."\n\nTo plot time periods separately, enter "separate" after mode and stat.\n'
+message='\nGSFLOW_plots is called by entering:\n' \
+        'python GSFLOW_plots.py mode stat\n\n' \
+        'mode options: statvar, csv, ggo, ssf or uzf\n' \
+        'stat options: mean_monthly, mean_annual, Q10, Q90\n' \
+        '-or-\n' \
+        'To plot everything, simply type "all."\n\n' \
+        'To plot time periods separately, enter "separate" after mode and stat.\n'
 
 try:
     mode=sys.argv[1] # 'statvar' 'csv' 'ggo' 'ssf' or 'uzf'
