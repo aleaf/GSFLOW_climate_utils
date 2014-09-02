@@ -1,13 +1,4 @@
-#### Getting data from the USGS-CIDA Geo Data Portal using pyGDP:
 
-
-**get_GDP_data.py**:  
-  Python script used to fetch downscaled climate data from CIDA's Geo Data Portal (GDP).
-  Acts as a driver for CIDA's **pyGDP** interface, which interacts with the GDP server to get the data.
-  Includes restart functionality, for recovery from communications failures with the server.
-  
-**GDP_to_data.py**:  
-  Takes files downloaded by get\_GDP_data.py and creates PRMS .data input files.
   
     
     
@@ -58,8 +49,8 @@
  * runner.py also creates a MODFLOW output control file on the fly, so that oc is correct regardless of what time period is being run
  * GSFLOW is then launched, followed by MOD2SMP, which extracts head data at pre-specified locations
  * finally, everything is zipped up
- * outputs 'BEC_run_$(Process).zip'      (e.g. BEC_run_0 for the first job)
-
+ * outputs 'BEC_run_$(Process).zip'      (e.g. BEC_run_0 for the first job) 
 
 8. run HTCondor  
+9. Postprocess the output (see readme in Postprocessing folder)
 
