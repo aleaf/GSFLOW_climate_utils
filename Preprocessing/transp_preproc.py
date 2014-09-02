@@ -11,27 +11,27 @@ import PRMS_data_interp_functions
 import textwrap
 
 # inputs
-datadir='D:/ATLData/Fox-Wolf/data' # contains existing PRMS .data files
-nhru=780
-frost_temp=28.0
+datadir = 'D:/ATLData/Fox-Wolf/data' # contains existing PRMS .data files
+nhru = 780
+frost_temp = 28.0
 growing_output=False # if True, generate .day files, otherwise just plots (much faster)
-real_data_periods=['1961-2000','2046-2065','2081-2100'] # for labeling non-synthetic data on plots
+real_data_periods = ['1961-2000', '2046-2065', '2081-2100'] # for labeling non-synthetic data on plots
 
 # output (.day files will be saved to datadir, with 'ide.data' endings replaced with 'transp.day')
-outpdf='growing_season_plots.pdf'
+outpdf = 'growing_season_plots.pdf'
 
 datafiles=[f for f in os.listdir(datadir) if f.endswith('.data')]
 scenarios=list(np.unique([f.split('.')[1] for f in datafiles]))
 
 print 'determining growing seasons...\n'
-Dfg_days_starts=defaultdict()
-Dfg_days_ends=defaultdict()
+Dfg_days_starts = defaultdict()
+Dfg_days_ends = defaultdict()
 
-count=0
+count = 0
 for f in datafiles:
-    df,timeper,Ncolumns,header=PRMS_data_interp_functions.read_datafile(datadir,f)
+    df, timeper, Ncolumns, header = PRMS_data_interp_functions.read_datafile(datadir, f)
     
-    tmin_cols,tmax_cols,precip_cols=PRMS_data_interp_functions.parseheader(header)
+    tmin_cols, tmax_cols, precip_cols = PRMS_data_interp_functions.parseheader(header)
     
     # initialize new dataframe to store growing season starts and ends
     # start with dummy values for year before simulation period
@@ -106,33 +106,7 @@ for f in datafiles:
         outfile="%stransp.day" %(f[:-8])
         newheader=['created by transp_preproc.py','transp_on     %s' %(nhru),40*'#']
         PRMS_data_interp_functions.writeoutput(DFG_days,newheader,outfile,datadir,fmt)
-    
-    # 12/20/2013: The commented-out code below is probably an old way of producing the growing season output
-    '''
-    if growing_output:
-        year=1961        
-        # initialize new dataframe, with Jan 1st
-        df_transp1=pd.DataFrame(np.zeros((1,nhru)),index=[np.datetime64(datetime.datetime(year,1,1))])
-        
-        # iterate thru original data; use index.year to get growing starts/ends
-        # create new dataframe of ones and zeros to denote growing
-        # this is VERY slow
-        print "building growing season array..."
-        for index, row in df.iterrows():
-            yr=index.year
-            growing_start,growing_end=dfg.ix[yr]
-            if growing_start<=index<growing_end: # less than growing end, because end occurs on 1st day <frost_temp
-                newline=pd.DataFrame(np.ones((1,nhru)),index=[index])
-                df_transp=df_transp.append(newline)
-            else:
-                newline=pd.DataFrame(np.zeros((1,nhru)),index=[index])
-                df_transp=df_transp.append(newline)
-                
-        print "writing to %stransp.day" %(f[:-8])
-        outfile="%stransp.day" %(f[:-8])
-        newheader=['created by transp_preproc.py','transp_on     %s' %(nhru),40*'#']
-        PRMS_data_interp_functions.writeoutput(df_transp,newheader,outfile,datadir)
-    '''
+
     print '\n%s%% done\n' %(round(100.0*count/float(len(datafiles)),1))
         
         
