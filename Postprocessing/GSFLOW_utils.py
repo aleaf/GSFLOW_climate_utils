@@ -289,12 +289,12 @@ def aggregate(var,varlist,results_folder,mode,spinup,**kwargs):
     return(overall_max,overall_min,GCMs,var_values,uzf_gage)
 
 
-def get_var_files(var,aggregated_results_folder,**kwargs):
+def get_var_files(var, aggregated_results_folder, **kwargs):
     
     try:
-        separate=kwargs['separate']
+        separate = kwargs['separate']
     except KeyError:
-        separate=False
+        separate = False
         pass
     try:
         Scenarios=kwargs['Scenarios']
@@ -364,7 +364,7 @@ def plot_moving_avg_minmax(csvs,cols,timeunits,window,function,title,ylabel,colo
         smoothed=pd.rolling_window(df_rs,window,function,center='true')
            
         # plot out mean, max and min
-        scenario=csvs[i].split(os.sep)[1].split('.')[-2]
+        scenario = os.path.split(csvs[i])[1].split('.')[1]
         
         try:
             ax=smoothed.mean(axis=1).plot(color=colors[i],label=scenario)
@@ -479,7 +479,7 @@ def plot_q_minmax(csvs,cols,stat,title,ylabel,colors,spinup,scenarios,Synthetic_
             ymax,ymin=np.ones(len(daterange))*plt.ylim()[1],np.ones(len(daterange))*plt.ylim()[0]
             syn=ax.fill_between(daterange,ymax,ymin,color='0.9',zorder=0)     
 
-def calc_boxstats(csvs,dates,ranges,baseline_dates,stat):
+def calc_boxstats(csvs, dates, ranges, baseline_dates, stat):
     # takes csv files for each variable (multiple scenarios) and aggregates
     # groups by month or by year and calculates period statistics
     # Average values for 20th century baseline are compared to future scenarios
@@ -615,8 +615,8 @@ def box_plot(collated,Baseline,dates,ranges,baseline_dates,stat,title,ylabel):
     
     # set box widths and positions
     if 'month' in stat:
-        spacing=0.1 # space between months
-        boxwidth=(1-2*spacing)/len(dates)
+        spacing = 0.1 # space between months
+        boxwidth = (1-2*spacing)/len(dates)
         positions=[]
         for m in range(12):
             for d in range(len(dates)):
@@ -702,62 +702,230 @@ def box_plot(collated,Baseline,dates,ranges,baseline_dates,stat,title,ylabel):
     ax.legend(handels,labels,fontsize=8,bbox_to_anchor=(0., -0.3, 1., .102), loc=4,ncol=2,borderaxespad=0.)
 
 
-def set_plot_titles(var,mode,stat,varlist,var_name_file,aggregated_results_folder):
+def set_plot_titles(var, mode, stat, var_info, aggregated_results_folder, plottype=None, quantile=None):
     # mode= type of output being processed: 'stavar' 'csv' 'ggo' 'ssf' or 'uzf'
     # stat= 'Mean Monthly', 'Mean Annual', 'Q10', 'Q90' 
     # make statvars dictionary with descriptions and units
-    fname=[f for f in os.listdir(aggregated_results_folder) if var==f.split('.')[0]][0]
-    
-    if mode=='statvar':
-        var_info=make_GSFLOWvar_infolist(var_name_file,varlist)
-        if len(var_info[var])>0:
-            title,units=var_info[var]
+
+    # Error in case no quantile value is given
+    if stat == 'quantile' and not quantile:
+        raise ValueError("stat = 'quantile' require that a float argument be entered for quantile, "
+                         "e.g. quantile=0.1 for Q90 flow")
+
+    def description(var, stat, plottype, var_info, quantile=None):
+
+        '''
+        Note: this algorithm still has a lot of holes, for BEC I had to do a lot of manual fixing of the variables table
+        especially for storage variables, and variables related to snow
+        also, the 'kludge' variables below weren't included in the automatic generation of the variables table,
+        because their filenames were different than the PRMS variables file
+        '''
+
+        if plottype.lower() == 'timeseries':
+
+            # gages and head observations
+            if var == 'head':
+                ydescrip = 'Annual average water level'
+                calc = 'mean' # pandas/numpy operation (e.g. 'mean' as in df.groupby(...).agg('mean')
+
+            elif var == 'baseflow':
+
+                if 'quantile' in stat:
+                    ydescrip = 'Annual Q{:.0f}0 flow'.format(10 * (1-quantile))
+                    calc = 'quantile'
+                else:
+                    ydescrip = 'Annual flow'
+                    calc = 'mean'
+
+            # variables that should be summed for each time period
+            # (e.g. converted from inches/day reported by model to in/month or in/year)
+            elif 'annual' in stat and not var_info[var]['Desc'].split()[1].strip() == 'Storage':
+
+                if var_info[var]['Units'] == 'inches':
+                    ydescrip = 'Annual total'
+                    calc = 'sum'
+
+                else:
+                    ydescrip = 'Annual average'
+                    calc = 'mean'
+
+            # otherwise, variable could be a flow rate or volume (in storage) that should be averaged
+            else:
+                ydescrip = 'Annual average'
+                calc = 'mean'
+
+        elif plottype.lower() == 'box' or plottype.lower() == 'violin':
+
+            # variables that should be summed for each time period
+            # (e.g. converted from inches/day reported by model to in/month or in/year)
+
+            # gages and head observations
+            if var == 'head':
+                ydescrip = 'Average water level'
+                calc = 'mean'
+
+            elif var == 'baseflow':
+
+                if 'quantile' in stat:
+                    ydescrip = 'Q{:.0f}0 flow'.format(10 * (1-quantile))
+                    calc = 'quantile'
+                else:
+                    ydescrip = 'Average flow'
+                    calc = 'mean'
+
+            elif 'annual' in stat:
+
+                # variables that should be summed for each time period
+                # (e.g. converted from inches/day reported by model to in/month or in/year)
+                if var_info[var]['Units'] == 'inches' and not var_info[var]['Desc'].split()[1].strip() == 'Storage':
+                    ydescrip = 'Average annual total'
+                    calc = 'sum'
+
+                elif 'flow rate' in var_info[var]['Desc']:
+                    ydescrip = 'Average flow'
+                    calc = 'mean'
+
+                else:
+                    ydescrip = 'Annual average'
+                    calc = 'mean'
+
+
+            elif 'monthly' in stat:
+
+                # variables that should be summed for each time period
+                # (e.g. converted from inches/day reported by model to in/month or in/year)
+                if var_info[var]['Units'] == 'inches' and not var_info[var]['Desc'].split()[1].strip() == 'Storage':
+                    ydescrip = 'Average monthly total'
+                    calc = 'sum'
+
+                elif 'flow rate' in var_info[var]['Desc']:
+                    ydescrip = 'Average monthly flow'
+                    calc = 'mean'
+
+                else:
+                    ydescrip = 'Monthly average'
+                    calc = 'mean'
+
+        return ydescrip, calc
+
+    # file name is only needed to determine if gage package output represents streamgage or 'uzf' gage
+    # if file for variable isn't in folder, pass over it
+    try:
+        fname = [f for f in os.listdir(aggregated_results_folder) if var == f.split('.')[0]][0]
+    except:
+        return
+
+    # kludges to resolve differences between GSFLOW output variable names and the "Parameter file for PRMS/GSFLOW"
+    # guessing with the basin_hortonian- the units (inches) in the var_name file make it seem like a PRMS variable,
+    # but it is coming from the GSFLOW csv
+    kludge = {'sat_stor': 'sat_store',
+              'basinhortonian': 'basin_hortonian',
+              'unsat_stor': 'unsat_store'}
+
+    if var in kludge.keys():
+        var = kludge[var]
+
+
+    if mode =='csv' or mode == 'statvar':
+
+        if len(var_info[var]) > 0:
+            title = var_info[var]['Desc']
+            units = var_info[var]['Units']
         else:
-            title,units=var,""
-        units=units.replace('temp_units','F')
-        ydescrip=var
-    elif mode=='csv':
-        var_info=make_GSFLOWvar_infolist(var_name_file,varlist)
-        title,units=var_info[var]
-        units=units.replace('L3','cf').replace('T','d')
-        ydescrip=var
-    elif mode=='ggo':
+            title, units = var, ""
+
+        units = units\
+            .replace('l3', 'cubic feet')\
+            .replace('/t', ' per day')\
+            .replace('temp_units', 'F')
+
+        ydescrip, calc = description(var, stat, plottype, var_info, quantile)
+
+    elif mode == 'ggo':
         if 'uzfgage' in fname:
-            title=var
-            ydescrip='head'
-            units='ft'
+            title = var
+            units = 'ft'
+            var = 'head'
+
         else:
-            title=var
-            ydescrip='flow'
-            units='cfd'
-    elif mode=='ssf':
-        title=var
-        ydescrip='head'
-        units='ft'
-    elif mode=='uzf':
-        title=var
-        ydescrip=var
-        units='ft3'
-    box_ylabels={ 'mean_daily_simulated_by_month': 'Mean daily simulated %ss by month, %s' %(ydescrip,units), 'mean_monthly' : 'Mean monthly %s, %s' %(ydescrip,units), 'monthly_statistics': 'Statistics by month: %s, %s' %(ydescrip,units), 'mean_annual':'Annual %s, %s' %(ydescrip,units), 'Q90' : 'Q90 %s, %s' %(ydescrip,units), 'Q10' : 'Q10 %s, %s' %(ydescrip,units)}
-    
-    box_ylabel=box_ylabels[stat]
-    mov_ylabel='%s, %s' %(ydescrip.title(),units)
-    
-    return(title,box_ylabel,mov_ylabel)
+            title = var
+            units = 'cfd'
+            var = 'baseflow'
+
+        ydescrip, calc = description(var, stat, plottype, var_info, quantile)
+
+    elif mode == 'ssf':
+        title = var
+        ydescrip = 'head'
+        units = 'ft'
+        var = 'head'
+        ydescrip, calc = description(var, stat, plottype, var_info, quantile)
+
+    elif mode == 'uzf':
+        title = var
+        ydescrip = var
+        units = 'ft3'
+        calc = 'sum'
+
+    if len(ydescrip) == 0:
+        ylabel = str(units).capitalize()
+    else:
+        ylabel ='%s, %s' %(ydescrip.capitalize(), units)
+    xlabel = ''
+
+    return title, xlabel, ylabel, calc
 
 
-def make_GSFLOWvar_infolist(var_name_file,varlist):
-    varinfo=defaultdict(list)
-    var_name_data=open(var_name_file,'r').readlines()
-    for var in varlist:
-        for i in range(len(var_name_data)):
-            line=var_name_data[i]
-            try:
-                line_var=line.strip().split()[1]
-            except:
-                continue
-            if var in line_var or var in line_var.replace('_','').lower():
-                Desc=var_name_data[i+6].strip().split(':')[-1].strip()
-                units=var_name_data[i+7].strip().split(':')[-1].strip()
-                varinfo[var]=[Desc,units]
+def get_var_info(var_name_file):
+
+    varinfo = {}
+    var_name_data = open(var_name_file, 'r').readlines()
+
+    read = False
+    for line in var_name_data:
+
+        if 'name:' in line.lower():
+            n = line.strip().split(':')[1].strip()
+            read = True
+            continue
+        elif read and 'desc:' in line.lower():
+            d = line.strip().split(':')[1].strip()
+
+        elif read and 'units:' in line.lower():
+            u = line.strip().split(':')[1].strip()
+            varinfo[n.lower()] = {'Desc': d.lower(),
+                            'Units': u.lower()}
+            read = False
+
     return varinfo
+
+def make_var_table(output_folder, var_name_file):
+
+    var_info = get_var_info(var_name_file)
+
+    ofp = open(os.path.join(output_folder, 'GSFLOW_variables.csv'), 'w')
+    ofp.write('Output_file,variable,description,units,stat,calc,plot_type,ylabel_0,ylabel_1,xlabel,title\n')
+    for mode in ['statvar', 'csv']:
+
+        aggregated_results_folder = os.path.join(output_folder, mode)
+
+        for var in var_info.iterkeys():
+
+            for stat in ['mean_monthly', 'mean_annual']:
+                if stat == 'mean_annual':
+                    plots = ['timeseries', 'box']
+                else:
+                    plots = ['box']
+
+                for plottype in plots:
+                    try:
+                        title, xlabel, ylabel, calc = set_plot_titles(var, mode, stat, var_info, aggregated_results_folder, plottype=plottype, quantile=None)
+                    except TypeError: # means that no results file exists for the variable, skip it
+                        continue
+                    if not xlabel:
+                        xlabel = ''
+
+                    ofp.write('{0},{1},"{2}",{3},{4},{5},{6},{7},{8},"{9}"\n'.format(mode, var, var_info[var]['Desc'], var_info[var]['Units'], stat, calc, plottype, ylabel, xlabel, title))
+
+    ofp.close()
+
