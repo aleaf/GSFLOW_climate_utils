@@ -11,10 +11,10 @@ import PRMS_data_interp_functions
 import textwrap
 
 # inputs
-datadir='continuous_input2' # contains existing PRMS .data files
+datadir='D:/ATLData/Fox-Wolf/data' # contains existing PRMS .data files
 nhru=780
 frost_temp=28.0
-growing_output=True # if True, generate .day files, otherwise just plots (much faster)
+growing_output=False # if True, generate .day files, otherwise just plots (much faster)
 real_data_periods=['1961-2000','2046-2065','2081-2100'] # for labeling non-synthetic data on plots
 
 # output (.day files will be saved to datadir, with 'ide.data' endings replaced with 'transp.day')
