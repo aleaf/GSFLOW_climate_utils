@@ -10,7 +10,7 @@ but it is more robust if the server is having connection issues
 and may be the only way to go for large datasets (for example, 880 hrus by 40 years for Fox-Wolf model in 20th century,
 which resulted in ~100+ MB output files for each gcm-scenario dataset)
 '''
-
+import sys
 import os
 import pyGDP
 import time
@@ -20,6 +20,8 @@ import traceback
 pyGDP = pyGDP.pyGDPwebProcessing()
 
 TestRun = False # turn this on to retrive a limited dataset for testing
+restart_from_files = True # exclude datasets already downloaded based on file names (doesn't require rec file, but
+# files must be named so that they can be associated with datasets via the datatype_from_filename function
 
 zipped_shapefiles = ['D:/ATLData/Fox-Wolf/hrus_final.zip'] # list of zipped shapefiles (one zip file per shapefile)
 outpath = 'D:/ATLData/Fox-Wolf/GDP/' # outfiles and recfile will be saved here
@@ -30,10 +32,14 @@ parameters = ['prcp', 'tmin', 'tmax']
 
 # GDP settings
 URI_designator = 'wicci' # search for all URIs containing this text
-URI_names = ['20c3m', 'sres_early', 'sres_late'] # get data for URIs ending in these names (using os.path.split)
+URI_names = ['sres_late'] # get data for URIs ending in these names (using os.path.split)
 retry_getDataType_after = 5 # seconds to wait before trying pyGDP.getDataType(URI) again
-restart_submit_after = 10 # minutes to wait before restarting after failed submit
+restart_submit_after = 1 # minutes to wait before restarting after failed submit
 download_datasets = 'individually' # 'together' or 'individually' (see notes above)
+
+def datatype_from_filename(fname):
+    datatype = '_'.join(fname.split('_')[:-1]).strip('_')
+    return datatype
 
 
 def submit_request(shapefile, URI, d, timeStart, timeEnd, attribute, values, ofp, mode='individually'):
@@ -75,7 +81,7 @@ if not os.path.isdir(outpath):
     os.makedirs(outpath)
 
 # restart
-if os.path.isfile(recfile):
+if os.path.isfile(recfile) and not restart_from_files:
     recfile_info = open(recfile, 'r').readlines()
 
     restart = True
@@ -83,7 +89,7 @@ if os.path.isfile(recfile):
     
     rec_URIs = []
     for line in recfile_info:
-        if 'usgs.gov' in line:
+        if 'usgs.gov' in line and line[:-1] not in rec_URIs:
             rec_URIs.append(line[:-1])
     try:
         last_URI = rec_URIs[-1]
@@ -91,7 +97,7 @@ if os.path.isfile(recfile):
 
         rec_datatypes = []
         for line in recfile_info[1:]:
-            if 'usgs.gov' not in line and last_URI[-5:] in line:
+            if 'usgs.gov' not in line:
                 datatype = line.strip().split(',')[1]
                 rec_datatypes.append(datatype)
         last_datatype = rec_datatypes[-1]
@@ -101,12 +107,18 @@ if os.path.isfile(recfile):
             print 'Restart file empty, starting from beginning...'
             restart = False
         else:
+            print sys.exc_info()
             print 'Problem reading restart file {}'.format(recfile)
+
             quit()
 
+elif restart_from_files:
+    restart = False
+    print "Restarting from files in {}".format(outpath)
 else:
     restart = False
     print "\nNo restart file found, starting from beginning..."
+
 
 #upload all shapefiles in the shp folder if they don't exist
 
@@ -130,20 +142,20 @@ values = pyGDP.getValues(shapefile, attribute)
 # Search for datasets
 print "\nGetting datasets and datatypes..."
 dataSetURIs = pyGDP.getDataSetURI(anyText=URI_designator)
-datasets = dataSetURIs[1][2] # this probably needs to be hard-coded based on results of line above
+dataSetURIs = dataSetURIs[1][2] # this probably needs to be hard-coded based on results of line above
 # get datasets that contain the specified URI names
-datasets = [[d for d in datasets if os.path.split(d)[1] == n][0] for n in URI_names]
+dataSetURIs = [[d for d in dataSetURIs if os.path.split(d)[1] == n][0] for n in URI_names]
 
-if len(datasets) > 0:
+if len(dataSetURIs) > 0:
     print '\nFound:'
-    for n in datasets:
+    for n in dataSetURIs:
         print '{}'.format(n)
 
 # in case of restart, trim already-processed entries from datasets
 if restart:
     if download_datasets == 'individually':
         rec_URIs.pop() # if downloading together and last URI is in recfile, the dataset downloaded OK
-    datasets=[d for d in datasets if d not in rec_URIs]
+    dataSetURIs = [d for d in dataSetURIs if d not in rec_URIs]
 
 # keep a master record files of processed datasets
 # if restarting, apend existing rec file like it was a continuous run
@@ -156,7 +168,7 @@ else:
 
 # Loop through the datasets (Time periods)
 print '\nGetting DataTypes for each URI...'
-for URI in datasets:
+for URI in dataSetURIs:
 
     # Get list of datatypes based on realization and parameters specified above
     datatypes_list = []
@@ -187,6 +199,13 @@ for URI in datasets:
         datatypes_list = [d for d in datatypes_list if d not in rec_datatypes]
         if len(datatypes_list) == 0:
             rec_datatypes = []
+            continue
+
+    if restart_from_files:
+        already_downloaded = [datatype_from_filename(f) for f in os.listdir(outpath)]
+        datatypes_list = [d for d in datatypes_list if d not in already_downloaded]
+        if len(datatypes_list) == 0:
+            print "URI already finished"
             continue
 
     # could add something here to print out list of datatypes after restart    
