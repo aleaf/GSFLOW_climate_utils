@@ -6,15 +6,6 @@
 
 1. run **pyGDP_to_data.py** to generate .data files for PRMS input
 
-    If adding synthetic data for spin-up:
-
-      To simply copy for the first year for each discrete time period n times, and insert the copied years at the         simulation start:
- * run **GSFLOW_generate_synthetic.py** (generates new .data files with synthetic data inserted at the beginning) 
-  
-  Or, to fill in any data gaps with copied synthetic data, creating a single continuous time period:
- * run **PRMS_data_interp.py** (requires **pandas** and also **PRMS_data_interp_functions.py** to run)
-
-
 2. run **GSFLOW_preprocess.py**
   (generates a preprocess.params file with information on the growing season, for each model run)
 
