@@ -6,7 +6,9 @@ which is separated into separate csv files for each Time Period-GCM-Scenario-Var
 
 Outputs PRMS .data files, one for each GCM-emissions scenario-time period combination
 - .data files have columns of tmax, tmin, and prcp (one column per hru or measurement data, per variable);
-- and one row for each timestep (e.g. day) of simulation 
+- and one row for each timestep (e.g. day) of simulation
+
+this code is slow and could probably be sped up a lot
 '''
 import os
 import numpy as np
@@ -15,7 +17,7 @@ from collections import defaultdict
 csvdir='D:/ATLData/Fox-Wolf/GDP' # directory containing downloaded files from wicci
 datadir='D:/ATLData/Fox-Wolf/data' # directory for converted files
 suffix = 'fw' # written at end of filename
-overwriteOutput = False # T/F if output file already exists, overwrite it
+overwriteOutput = True # T/F if output file already exists, overwrite it
 
 print "Getting list of csv files..."
 try:
@@ -37,15 +39,16 @@ for cf in csvs:
     (scenario,gcm,par,realtime)=cf.split('-')
     realization=int(realtime[:2])
     if '20c3m' in realtime:
-        timeper='1961-2000'
+        timeper = '1961-2000'
     elif 'early' in realtime:
-        timeper='2046-2065'
+        timeper = '2046-2065'
     elif 'late' in realtime:
-        timeper='2081-2100'
+        timeper = '2081-2100'
     else:
         raise Exception("Cannot parse time period from filename")
     
-    combination='%s.%s.%s.%s.%s' %(gcm,scenario,realization,timeper, suffix)
+    combination = '{}.{}.{}.{}'.format(gcm, scenario, realization, timeper)
+
     # create dictionary entry for each scenario-gcm-realization-timeperiod combination
     try:
         combinations[combination].append(cf)
@@ -54,7 +57,7 @@ for cf in csvs:
 
 # make sure that all of the files are there
 for c in combinations.iterkeys():
-    if len(combinations[c])!=3:
+    if len(combinations[c]) != 3:
         raise IndexError("missing an input file for " + c + "!")
 
 
@@ -69,9 +72,8 @@ for combination in combinations.iterkeys():
     num_attribs=dict()
     print combination + '-'*20
     
-    outpath=os.path.join(datadir,combination)
-    
-    outfile = outpath + '.data'
+    outfile = os.path.join(datadir, '{}.{}.data'.format(combination, suffix))
+
     if not overwriteOutput and os.path.isfile(outfile):
         print "{} already exists, skipping...\n".format(outfile)
         continue    
@@ -119,27 +121,27 @@ for combination in combinations.iterkeys():
     
     for i in range(len(data[par])):
         
-        # explode date from first parameter and add
-        datetime=list(data[par][0])[0]
-        (year,month,day)=datetime[:10].split('-')
-        (h,m,s)=datetime[11:-1].split(':')
-        newline=map(int,[year,month,day,h,m,s])        
+        # explode date from first variable and add (times should be the same for all variables)
+        datetime = list(data[par][i])[0].strip('Z') # override UTC 'Zulu time'
+        (year, month, day) = datetime[:10].split('-')
+        (h, m, s) = datetime[11:-1].split(':')
+        newline = map(int, [year, month, day, h, m, s])
         
         # add values for each parameter in par_order
         for par in par_order:
             
             line=list(data[par][i])
             for value in line[1:]:
-                if par=='prcp':
-                    if value<=5e-5:
-                        valueIn="{0:.2f}".format(0)
+                if par == 'prcp':
+                    if value <= 5e-5: # very small values are due to floating point errors
+                        valueIn = "{0:.2f}".format(0)
                     else:
-                        valueIn="{0:.2f}".format(value/25.4) # mm/in
+                        valueIn = "{0:.2f}".format(value/25.4) # mm/in
                 elif 't' in par:
-                    valueIn="{0:.2f}".format(value*(9.0/5.0)+32.0) # C to F
+                    valueIn = "{0:.2f}".format(value*(9.0/5.0)+32.0) # C to F
                 newline.append(valueIn)
                 
-        newline='  '.join(map(str,newline)) + '\n'
+        newline = '  '.join(map(str, newline)) + '\n'
         ofp.write(newline)
     ofp.close()
     print "saved to {}".format(outfile)
