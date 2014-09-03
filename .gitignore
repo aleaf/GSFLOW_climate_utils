@@ -26,3 +26,4 @@ pyGDP
 statvar/
 example_plots/
 example_results/
+*.idea

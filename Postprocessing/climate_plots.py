@@ -30,7 +30,7 @@ plt.rcParams.update(newparams)
 
 # set/modify global Seaborn defaults
 # update any overlapping parameters in the seaborn 'paper' style with the custom values above
-sb.set_context("paper", newparams)
+sb.set_context("paper", rc=newparams)
 
 
 
@@ -145,7 +145,7 @@ class ReportFigures():
         dfs = cs.annual_timeseries(csvs, self.gcms, self.spinup, stat, calc=calc, quantile=quantile)
 
         # make 'fill_between' timeseries plot with  mean and min/max for each year
-        fig, ax = timeseries(dfs, ylabel, self.timeseries_properties, self.synthetic_timepers/365.0, title=title,
+        fig, ax = timeseries(dfs, ylabel=ylabel, props=self.timeseries_properties, Synthetic_timepers=self.synthetic_timepers/365.0, title=title,
                              default_font=self.default_font)
 
         outfile = self.name_output(var, stat, 'timeseries', quantile)
@@ -326,10 +326,10 @@ def make_title(ax, title, zorder=200):
     ax.set_title(title.capitalize(), family='Univers 67 Condensed', fontsize=14, loc='left')
 
 
-def timeseries(dfs, ylabel, props, Synthetic_timepers,
-                    clip_outliers=True, xlabel='', title=None, default_font='Univers 57 Condensed'):
+def timeseries(dfs, ylabel='', props=None, Synthetic_timepers=[],
+                    clip_outliers=True, xlabel='', title='', default_font='Univers 57 Condensed'):
 
-    # dfs = list of dataframes to plot (one dataframe per climate scenario)
+    # dfs = dict of dataframes to plot (one dataframe per climate scenario)
     # window= width of moving avg window in timeunits
     # function= moving avg. fn to use (see Pandas doc)
     # title= plot title, ylabel= y-axis label
@@ -343,6 +343,11 @@ def timeseries(dfs, ylabel, props, Synthetic_timepers,
                            'xtick.'
                            'axes.grid': False,
                            'grid.color': 'w'})
+
+    if not props:
+        props = {'sresa1b': {'color': 'Tomato', 'zorder': 2, 'alpha': 0.5},
+                 'sresa2': {'color': 'SteelBlue', 'zorder': 1, 'alpha': 0.5},
+                 'sresb1': {'color': 'Yellow', 'zorder': 3, 'alpha': 0.5}}
 
     # initialize plot
     fig = plt.figure()

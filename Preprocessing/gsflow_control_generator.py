@@ -5,22 +5,26 @@ import os
 import datetime
 
 # input
-datadir='input' # directory with PRMS data files
-controltemplate='gsflow_pest.control'
-model_mode="GSFLOW" # PRMS or GSFLOW
+datadir = 'D:/ATLData/Fox-Wolf/data' # directory with PRMS data files
+controltemplate = 'D:/ATLData/Fox-Wolf/example.control'
+model_mode = "PRMS" # PRMS or GSFLOW; mode to write in control file
 
 # output
-controldir='control_continuous' # where to save .control files
-outputdir='output' # subfolder in slave dir where output files will be saved during individual scenario runs
-paramsdir='params' # subfolder in slave dir where params files will be stored during individual scenario runs
+controldir = 'D:/ATLData/Fox-Wolf/data/control' # where to save .control files
+outputdir = 'output' # subfolder in slave dir where output files will be saved during individual scenario runs
+paramsdir = 'params' # subfolder in slave dir where params files will be stored during individual scenario runs
 #preprocdir='preprocessing' # folder where tmin.day files are stored (only for WRITE_CLIMATE mode)
 
-mode='WRITE_CLIMATE' # WRITE_CLIMATE if using write climate module
+WRITE_CLIMATE = False # T/F T to create input files for running GSFLOW/PRMS in WRITE_CLIMATE (preprocessing) mode
 
-now=datetime.datetime.now()
+now = datetime.datetime.now()
+
+# make an output folder if there isn't one already
+if not os.path.isdir(controldir):
+    os.makedirs(controldir)
 
 print "Getting list of data files..."
-allfiles=os.listdir(datadir)
+allfiles = os.listdir(datadir)
 
 datas=[f for f in allfiles if f.lower().endswith('.data')]
 
@@ -59,7 +63,7 @@ for files in datas:
             elif "param_file" in controldata[i-4]:
                 ofp.write(os.path.join(paramsdir,basename+'_preprocess.params\n'))
                 
-            elif mode=='WRITE_CLIMATE':
+            elif WRITE_CLIMATE:
                 if "transp_module" in controldata[i-3]:
                     ofp.write('climate_hru\n')
                 elif "transp_day" in controldata[i-3]:
