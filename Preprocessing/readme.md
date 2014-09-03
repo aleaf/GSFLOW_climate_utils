@@ -2,11 +2,15 @@
 
 GSFLOW/PRMS requires information on the growing season, defined as the time period between the last killing frost of the year, and first killing frost of the year. Two options for developing growing season input from daily minimum temperature data:
 
-**use transp_preproc.py to write transp.day files directly**  
-(transp.day files tell GSFLOW/PRMS whether transpiration is on or off in each hru, on each day)  
+**use transp_preproc.py to write a set of transp.day files directly**  
+(transp.day files tell GSFLOW/PRMS whether transpiration is on or off in each hru, on each day) 
 
+ * requires a set of GSFLOW/PRMS .data files (i.e. from **pyGDP_to_data.py**) 
  * the growing season can be determined by hru, or globally for the whole domain (the latter option needs a bit of work to be updated to the new object-oriented framework of transp_preproc.py)
+ * **transp_preproc.py** can also make a timeseries plot of the growing season length over time, for the suite of gcm-scenario combinations
+ * outputs transp.day files, one for each gcm-scenario-time period combination
  * the transp.day files are included with the .data files in the input folder, and specified in the GSFLOW/PRMS control file
+
 
 **use GSFLOW/PRMS to calculate the growing season via GSFLOW_preprocess.py**  
   (generates a preprocess.params file with information on the growing season, for each model run)
