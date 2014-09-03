@@ -4,17 +4,20 @@ import os
 import numpy as np
 import pandas as pd
 from collections import defaultdict
-import datetime
+import datetime as dt
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import PRMSio
 import textwrap
+import sys
+sys.path.append('../Postprocessing')
+import climate_plots as cp
 
 # inputs
 datadir = 'D:/ATLData/Fox-Wolf/data' # contains existing PRMS .data files
 
 # growing season parameters
-uniform = False # T/F; T: one growing season for entire domain, F: growing season by hru
+uniform = False # T/F; T: one growing season for entire domain (incomplete option), F: growing season by hru
 nhru = 880
 frost_temp = 28.0
 growing_output = False # if True, generate .day files, otherwise just plots (much faster)
@@ -23,27 +26,33 @@ real_data_periods = ['1961-2000', '2046-2065', '2081-2100'] # for labeling non-s
 # output (.day files will be saved to datadir, with 'ide.data' endings replaced with 'transp.day')
 outpdf = 'growing_season_plots.pdf'
 
+# growing season plot properties
+props = {'sresa1b': {'color': 'Tomato', 'zorder': 2, 'alpha': 0.5},
+         'sresa2': {'color': 'SteelBlue', 'zorder': 1, 'alpha': 0.5},
+         'sresb1': {'color': 'Yellow', 'zorder': 3, 'alpha': 0.5}}
+
 datafiles = [os.path.join(datadir, f) for f in os.listdir(datadir) if f.endswith('.data')]
 scenarios = list(np.unique([f.split('.')[1] for f in datafiles]))
 
+'''
 print 'determining growing seasons...\n'
 Dfg_days_starts = defaultdict()
 Dfg_days_ends = defaultdict()
 
 count = 0
+'''
 
-
-def uniform_growing_season(df, timeper):
+def uniform_growing_season(df, data, frost_temp):
     # initialize new dataframe to store growing season starts and ends
     # start with dummy values for year before simulation period
-    year = int(timeper[0:4])-1
-    dummyseason = np.array([[np.datetime64(datetime.datetime(year, 1, 1)),
-                                      np.datetime64(datetime.datetime(year, 7, 1))]])
-    dfg = pd.DataFrame(dummyvalues, index=[year])
-    dfg_days = pd.DataFrame(np.array([[1, 183]]), index=[pd.Timestamp(datetime.datetime(year, 1, 1))],
+    year = int(data.timeper[0:4])-1
+    dummyseason = np.array([[np.datetime64(dt.datetime(year, 1, 1)),
+                                      np.datetime64(dt.datetime(year, 7, 1))]])
+    dfg = pd.DataFrame(dummyseason, index=[year])
+    dfg_days = pd.DataFrame(np.array([[1, 183]]), index=[pd.Timestamp(dt.datetime(year, 1, 1))],
                             columns=['Growing season start', 'Growing season end'])
     growing = False
-    year = int(timeper[0:4])
+    year = int(data.timeper[0:4])
 
     # iterate through data file to determine growing season starts and ends for each year
     print "finding last and first days with tmin<%s for each year..." %(frost_temp)
@@ -52,12 +61,12 @@ def uniform_growing_season(df, timeper):
 
         # while in the same year
         if yr == year:
-            Tmin = np.min(row.values[tmax_cols:tmax_cols+tmin_cols])
+            Tmin = np.min(row)
 
             # if minimum temp rises above frost_temp, reset growing_start
             # stop reseting growing_start after July 1
             if not growing and Tmin > frost_temp:
-                if index < pd.Timestamp(np.datetime64(datetime.datetime(yr, 7, 1))):
+                if index < pd.Timestamp(np.datetime64(dt.datetime(yr, 7, 1))):
                     growing_start = index
                     growing = True
 
@@ -73,7 +82,7 @@ def uniform_growing_season(df, timeper):
         if yr <> year: #otherwise last year won't append
             dftemp = pd.DataFrame(np.array([[growing_start, growing_end]]), index=[year])
             dftemp_days = pd.DataFrame(np.array([[growing_start.dayofyear, growing_end.dayofyear]]),
-                                       index=[pd.Timestamp(datetime.datetime(year, 1, 1))],
+                                       index=[pd.Timestamp(dt.datetime(year, 1, 1))],
                                        columns=['Growing season start','Growing season end'])
             dfg = dfg.append(dftemp)
             dfg_days = dfg_days.append(dftemp_days)
@@ -83,7 +92,7 @@ def uniform_growing_season(df, timeper):
     # append last year
     dftemp = pd.DataFrame(np.array([[growing_start, growing_end]]), index=[year])
     dftemp_days = pd.DataFrame(np.array([[growing_start.dayofyear, growing_end.dayofyear]]),
-                               index=[pd.Timestamp(datetime.datetime(year, 1, 1))],
+                               index=[pd.Timestamp(dt.datetime(year, 1, 1))],
                                columns=['Growing season start', 'Growing season end'])
     dfg = dfg.append(dftemp)
     dfg_days = dfg_days.append(dftemp_days)
@@ -95,25 +104,48 @@ def uniform_growing_season(df, timeper):
     return dfg, dfg_days
 
 
-def growing_season(dfy, frost_temp):
+def growing_season_by_hru(df, frost_temp):
     '''
     find last date where tmin is < frost_temp
-    takes a Dataframe of values from one year
     '''
+    print '\ndetermining growing season...'
+    # group tmin data by year
+    dfg = df.groupby(lambda x: x.year)
 
-    # reindex dataframe to day of year
-    dfy.index = np.arange(len(dfy))+1
+    # initialize dataframes for last and first frosts by hru
+    years = [y for y, g in dfg]
+    df_lf = pd.DataFrame(index=years, columns=df.columns)
+    df_ff = pd.DataFrame(index=years, columns=df.columns)
 
-    # split year in half on July 1st
-    dfy1, dfy2 = dfy.iloc[:182, :], dfy.iloc[182:, :]
+    # iterate through years and dataframes in dfg
+    for year, dfy in dfg:
+        print year,
+        # reindex dataframe to day of year
+        dfy.index = np.arange(len(dfy))+1
 
-    # last frost is the last day before July 1st on which tmin <= frost_temp (returns single row vector)
-    last_frost = dfy1.apply(lambda x: x[x <= frost_temp].dropna().index[-1])
-    first_frost = dfy2.apply(lambda x: x[x <= frost_temp].dropna().index[0])
+        # split year in half on July 1st
+        dfy1, dfy2 = dfy.iloc[:182, :], dfy.iloc[182:, :]
+
+        # last frost is the last day before July 1st on which tmin <= frost_temp (returns single row vector)
+        # first frost is the first day after July 1st on which tmin <= frost_temp
+        last_frost = dfy1.apply(lambda x: x[x <= frost_temp].dropna().index[-1])
+        first_frost = dfy2.apply(lambda x: x[x <= frost_temp].dropna().index[0])
+
+        # assign (1 x nhru) vectors of last/first frosts to year in DataFrame
+        df_lf.loc[year, :] = last_frost
+        df_ff.loc[year, :] = first_frost
+    print '\n'
+    return df_lf, df_ff
 
 
+##################
+## Main Program ##
+##################
 
-for f in datafiles[0:1]:
+# dict of dataframes, one per future emissions scenario
+gsl = dict(zip(scenarios, [pd.DataFrame()] * len(scenarios)))
+
+for f in datafiles:
 
     data = PRMSio.datafile(f)
 
@@ -123,13 +155,61 @@ for f in datafiles[0:1]:
     df = df.loc[:, data.tmin_start: data.tmin_stop]
     df.columns = np.arange(np.shape(df)[1]) + 1 # hru numbers as column names
 
-
-    '''
     if uniform:
-        dfg, dfg_days = uniform_growing_season(df, data.timeper)
+
+        #This option needs some more work to mesh back with the original code (commented out) below!
+        dfg, dfg_days = uniform_growing_season(df, data, frost_temp)
+
+    else:
+        # get dataframes of last and first frost (in days since Jan1) by hru (n years x n hrus)
+        df_lf, df_ff = growing_season_by_hru(df, frost_temp)
+
+        # munge data for growing season length summary plot
+        # calculate average growing season length across all hrus
+        gs_length = (df_ff-df_lf).mean(axis=1)
+
+        # reset index to datetime to avoid confusion when adding to scenario dataframe (pandas won't match up integer indexes)
+        gs_length.index = pd.DatetimeIndex([dt.datetime(y, 1, 1) for y in gs_length.index])
+
+        # populate in dataframe for scenario (column name = gcm)
+        gsl[data.scenario] = gsl[data.scenario].append(pd.DataFrame({data.gcm: gs_length}))
+
+        if growing_output:
+            # instantiate dotDay class (converts df_lf and df_ff to boolean dataframe of growing season (n days x n hrus)
+            dD = PRMSio.dotDay(df_lf, df_ff, nhru)
+
+            # write transp.day output file
+            dD.header = ['created by transp_preproc.py\ntransp_on     %s\n' %(nhru) + 40*'#' + '\n']
+
+            outfile = f[:-5] + '_transp.day'
+            dD.write_output(outfile)
+
+# Make a summary plot of growing season length for suite of GCMs and future emissions scenarios
+
+# finish munging the data
+if '20c3m' in scenarios:
+    scenarios = [s for s in scenarios if s != '20c3m']
+    for s in scenarios:
+        gsl[s] = gsl[s].append(gsl['20c3m']).sort()
+
+# resample the timeseries of growing season lengths at annual intervals (based on Jan1),
+# so that no-data periods are filled in by nans
+for s in scenarios:
+    gsl[s] = gsl[s].resample('AS')
+
+fig, ax = cp.timeseries(gsl, ylabel='Growing season length (days)', props=props, Synthetic_timepers=[],
+                        clip_outliers=True, xlabel='', title=None, default_font='Univers 57 Condensed')
 
 
-    
+
+
+
+
+
+
+'''
+Old code that was used with BEC data to develop single growing season for whole domain
+
     # append to dicts for plotting
     Dfg_days_starts[f] = dfg_days['Growing season start']
     Dfg_days_ends[f] = dfg_days['Growing season end']
