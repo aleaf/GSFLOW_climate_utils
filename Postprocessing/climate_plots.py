@@ -30,10 +30,7 @@ plt.rcParams.update(newparams)
 
 # set/modify global Seaborn defaults
 # update any overlapping parameters in the seaborn 'paper' style with the custom values above
-try:
-    sb.set_context("paper", newparams)
-except:
-    print sys.exc_info()
+sb.set_context("paper", rc=newparams)
 
 
 
@@ -330,7 +327,7 @@ def make_title(ax, title, zorder=200):
 
 
 def timeseries(dfs, ylabel='', props=None, Synthetic_timepers=[],
-                    clip_outliers=True, xlabel='', title=None, default_font='Univers 57 Condensed'):
+                    clip_outliers=True, xlabel='', title='', default_font='Univers 57 Condensed'):
 
     # dfs = dict of dataframes to plot (one dataframe per climate scenario)
     # window= width of moving avg window in timeunits

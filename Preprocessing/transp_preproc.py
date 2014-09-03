@@ -24,7 +24,7 @@ growing_output = False # if True, generate .day files, otherwise just plots (muc
 real_data_periods = ['1961-2000', '2046-2065', '2081-2100'] # for labeling non-synthetic data on plots
 
 # output (.day files will be saved to datadir, with 'ide.data' endings replaced with 'transp.day')
-outpdf = 'growing_season_plots.pdf'
+outpdf = 'D:/ATLData/Fox-Wolf/Fox-Wolf_growing_season.pdf'
 
 # growing season plot properties
 props = {'sresa1b': {'color': 'Tomato', 'zorder': 2, 'alpha': 0.5},
@@ -197,8 +197,8 @@ if '20c3m' in scenarios:
 for s in scenarios:
     gsl[s] = gsl[s].resample('AS')
 
-fig, ax = cp.timeseries(gsl, ylabel='Growing season length (days)', props=props, Synthetic_timepers=[],
-                        clip_outliers=True, xlabel='', title=None, default_font='Univers 57 Condensed')
+fig, ax = cp.timeseries(gsl, ylabel='Growing season length (days)', props=props, title='')
+fig.savefig(outpdf, dpi=300)
 
 
 

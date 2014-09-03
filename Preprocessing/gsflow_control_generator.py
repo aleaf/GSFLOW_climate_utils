@@ -6,8 +6,8 @@ import datetime
 
 # input
 datadir = 'D:/ATLData/Fox-Wolf/data' # directory with PRMS data files
-controltemplate = 'gsflow_pest.control'
-model_mode = "GSFLOW" # PRMS or GSFLOW; mode to write in control file
+controltemplate = 'D:/ATLData/Fox-Wolf/example.control'
+model_mode = "PRMS" # PRMS or GSFLOW; mode to write in control file
 
 # output
 controldir = 'D:/ATLData/Fox-Wolf/data/control' # where to save .control files
@@ -18,6 +18,10 @@ paramsdir = 'params' # subfolder in slave dir where params files will be stored 
 WRITE_CLIMATE = False # T/F T to create input files for running GSFLOW/PRMS in WRITE_CLIMATE (preprocessing) mode
 
 now = datetime.datetime.now()
+
+# make an output folder if there isn't one already
+if not os.path.isdir(controldir):
+    os.makedirs(controldir)
 
 print "Getting list of data files..."
 allfiles = os.listdir(datadir)
