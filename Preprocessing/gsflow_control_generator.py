@@ -6,16 +6,18 @@ import datetime
 
 # input
 datadir = 'D:/ATLData/Fox-Wolf/data' # directory with PRMS data files
-controltemplate = 'D:/ATLData/Fox-Wolf/example.control'
+controltemplate = 'D:/ATLData/Fox-Wolf/fox_climate_hru_future.control'
+model_prefix = 'fw' # prefix indicating the model (e.g. for csv output file -> <prefix>_out.csv )
 model_mode = "PRMS" # PRMS or GSFLOW; mode to write in control file
 
 # output
-controldir = 'D:/ATLData/Fox-Wolf/data/control' # where to save .control files
+controldir = 'D:/ATLData/Fox-Wolf/control' # where to save .control files
 outputdir = 'output' # subfolder in slave dir where output files will be saved during individual scenario runs
 paramsdir = 'params' # subfolder in slave dir where params files will be stored during individual scenario runs
 #preprocdir='preprocessing' # folder where tmin.day files are stored (only for WRITE_CLIMATE mode)
 
-WRITE_CLIMATE = False # T/F T to create input files for running GSFLOW/PRMS in WRITE_CLIMATE (preprocessing) mode
+WRITE_CLIMATE = True # T/F T if using WRITE_CLIMATE module
+preproc = False # T/F whether or not control files are for 'preprocessing' run
 
 now = datetime.datetime.now()
 
@@ -40,14 +42,14 @@ for files in datas:
     fname=files.split('.')
     GCM,scenario,realization,timeper=fname[0:4]
     ofp=open(os.path.join(controldir,basename+'.control'),'w')
-    ofp.write('BEC GSFLOW - GCM: %s, Scenario: %s, Realization: %s, %s, created by gsflow_control_generator.py on %s/%s/%s\n' %(GCM,scenario,realization,timeper,now.month,now.day,now.year))
+    ofp.write('Fox-Wolf PRMS - GCM: %s, Scenario: %s, Realization: %s, %s, created by gsflow_control_generator.py on %s/%s/%s\n' %(GCM,scenario,realization,timeper,now.month,now.day,now.year))
     for i in range(len(controldata))[1:]:
         line=controldata[i]
         if i<3:
             ofp.write(line)
         else:
             if "csv_output_file" in controldata[i-3]:
-                ofp.write(os.path.join(outputdir,basename+'.bec_out.csv\n'))
+                ofp.write(os.path.join(outputdir,basename+'_out.csv\n'))
             elif "data_file" in controldata[i-3]:
                 ofp.write(os.path.join(datadir,files)+'\n')
             elif "end_time" in controldata[i-3]:
@@ -55,19 +57,19 @@ for files in datas:
             elif "model_mode" in controldata[i-3]:
                 ofp.write(model_mode+'\n')
             elif "model_output_file" in controldata[i-3]:
-                ofp.write(os.path.join(outputdir,basename+'.BEC_GSFLOW.out\n'))
+                ofp.write(os.path.join(outputdir,basename+'_{}.out\n'.format(model_mode)))
             elif "start_time" in controldata[i-3]:
                 ofp.write(timeper.split('-')[0]+'\n')
             elif "stat_var_file" in controldata[i-3]:
                 ofp.write(os.path.join(outputdir,basename+'.statvar.dat\n'))
-            elif "param_file" in controldata[i-4]:
+            elif preproc and "param_file" in controldata[i-4]:
                 ofp.write(os.path.join(paramsdir,basename+'_preprocess.params\n'))
                 
             elif WRITE_CLIMATE:
                 if "transp_module" in controldata[i-3]:
                     ofp.write('climate_hru\n')
                 elif "transp_day" in controldata[i-3]:
-                    ofp.write(os.path.join(datadir,files[:-8]+'transp.day\n'))
+                    ofp.write(os.path.join(datadir, basename+'_transp.day\n'))
                 else:
                     ofp.write(line)
             else:

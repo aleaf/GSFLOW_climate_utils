@@ -175,8 +175,11 @@ for f in datafiles:
         gsl[data.scenario] = gsl[data.scenario].append(pd.DataFrame({data.gcm: gs_length}))
 
         if growing_output:
-            # instantiate dotDay class (converts df_lf and df_ff to boolean dataframe of growing season (n days x n hrus)
-            dD = PRMSio.dotDay(df_lf, df_ff, nhru)
+            # instantiate dotDay class
+            dD = PRMSio.dotDay()
+
+            # convert df_lf and df_ff to boolean dataframe of growing season (n days x n hrus)
+            dD.transp(df_lf, df_ff, nhru)
 
             # write transp.day output file
             dD.header = ['created by transp_preproc.py\ntransp_on     %s\n' %(nhru) + 40*'#' + '\n']

@@ -74,14 +74,18 @@ class datafile:
 
 class dotDay:
 
-    def __init__(self, last_frost, first_frost, nhru):
+    def __init__(self, df=pd.DataFrame()):
+
+        self.df = df
+        self.nhru = np.shape(df)[1]
+
+    def transp(self, last_frost, first_frost, nhru):
 
         self.df_lf = last_frost
         self.df_ff = first_frost
         self.index = pd.date_range(dt.datetime(last_frost.index[0], 1, 1),
                                    dt.datetime(last_frost.index[-1], 12, 31))
         self.columns = np.arange(nhru) + 1
-        self.boolean_transp = pd.DataFrame()
         self.header = []
 
         # convert frost dates to boolean series (loop seems clunky but not sure how to vectorize this)
@@ -90,7 +94,7 @@ class dotDay:
             print year,
             l = [self.toBoolean(year, h) for h in (np.arange(nhru) + 1)] # using a list comprehension is MUCH faster than another loop
             transp_yr = pd.DataFrame(l).T # make a DataFrame for the year
-            self.boolean_transp = self.boolean_transp.append(transp_yr)
+            self.df = self.df.append(transp_yr)
 
 
     def toBoolean(self, year, hru):
@@ -126,16 +130,16 @@ class dotDay:
             ofp.write(lines)
 
         # insert columns for PRMS date
-        ndays = len(self.boolean_transp)
-        date_cols = [self.boolean_transp.index.year,
-                     self.boolean_transp.index.month,
-                     self.boolean_transp.index.day,
+        ndays = len(self.df)
+        date_cols = [self.df.index.year,
+                     self.df.index.month,
+                     self.df.index.day,
                      0, 0, 0]
         names = ['Y', 'M', 'D', 'h', 'm', 's']
         for i in np.arange(6)+1:
-            self.boolean_transp.insert(0, names[-i], date_cols[-i])
+            self.df.insert(0, names[-i], date_cols[-i])
         # add dataframe to output file
-        self.boolean_transp.to_csv(ofp, sep=' ', header=False, index=False)
+        self.df.to_csv(ofp, sep=' ', header=False, index=False)
 
         ofp.close()
 
