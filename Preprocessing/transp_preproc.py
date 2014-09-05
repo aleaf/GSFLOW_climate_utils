@@ -14,11 +14,11 @@ sys.path.append('../Postprocessing')
 import climate_plots as cp
 
 # inputs
-datadir = 'D:/ATLData/Bl' # contains existing PRMS .data files
+datadir = 'D:/ATLData/BlackEarth/input' # contains existing PRMS .data files
 
 # growing season parameters
 uniform = False # T/F; T: one growing season for entire domain (incomplete option), F: growing season by hru
-nhru = 880
+nhru = 880 # only needed if growing_output = True
 frost_temp = 28.0
 growing_output = False # if True, generate .day files, otherwise just plots (much faster)
 real_data_periods = ['1961-2000', '2046-2065', '2081-2100'] # for labeling non-synthetic data on plots
