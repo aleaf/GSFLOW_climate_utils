@@ -728,7 +728,7 @@ def set_plot_titles(var, mode, stat, var_info, aggregated_results_folder, plotty
                 ydescrip = 'Annual average water level'
                 calc = 'mean' # pandas/numpy operation (e.g. 'mean' as in df.groupby(...).agg('mean')
 
-            elif var == 'baseflow':
+            elif var == 'baseflow' or 'cfs' in var:
 
                 if 'quantile' in stat:
                     ydescrip = 'Annual Q{:.0f}0 flow'.format(10 * (1-quantile))
@@ -764,7 +764,7 @@ def set_plot_titles(var, mode, stat, var_info, aggregated_results_folder, plotty
                 ydescrip = 'Average water level'
                 calc = 'mean'
 
-            elif var == 'baseflow':
+            elif var == 'baseflow' or 'cfs' in var:
 
                 if 'quantile' in stat:
                     ydescrip = 'Q{:.0f}0 flow'.format(10 * (1-quantile))
@@ -828,11 +828,16 @@ def set_plot_titles(var, mode, stat, var_info, aggregated_results_folder, plotty
 
     if mode =='csv' or mode == 'statvar':
 
-        if len(var_info[var]) > 0:
+        try:
+            var_info[var]
             title = var_info[var]['Desc']
             units = var_info[var]['Units']
-        else:
-            title, units = var, ""
+        except:
+            if 'cfs' in var:
+                title = var
+                units = 'cubic feet per second'
+            else:
+                title, units = var, ""
 
         units = units\
             .replace('l3', 'cubic feet')\

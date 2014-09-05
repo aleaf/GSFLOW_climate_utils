@@ -10,13 +10,14 @@ results_path = '/Users/aleaf/Documents/BlackEarth/run3'
 modes = ['csv']#['statvar', 'csv', 'ggo', 'ssf', 'uzf']
 var_name_file = 'BEC.var_name' # descriptions of GSFLOW variables
 
+
 # create a variables table by running GSFLOW_utils.make_var_table()
 # this table can then be edited to customize plot titles and y labels
-GSFLOW_variables_table = '/Users/aleaf/Documents/BlackEarth/run3/GSFLOW_variables.csv'
+GSFLOW_variables_table = 'GSFLOW_variables.csv'
 
 
 # output
-output_folder = '/Users/aleaf/Documents/BlackEarth/run3/plots_run3'
+output_folder = 'D:/ATLData/Fox-Wolf/plots'
 
 
 # exclude any GSFLOW/PRMS variables in this list
@@ -109,7 +110,7 @@ for mode in modes:
 
             # Make plots of quantile flows for the gages
             else:
-                if mode == 'ggo':
+                if mode == 'ggo' or 'cfs' in var:
                     for quantile in [0.1, 0.9]:
                         print 'Q{:.0f}0 Flows: '.format(10*(1-quantile)),
 

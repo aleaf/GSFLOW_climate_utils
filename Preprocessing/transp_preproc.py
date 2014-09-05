@@ -14,17 +14,17 @@ sys.path.append('../Postprocessing')
 import climate_plots as cp
 
 # inputs
-datadir = 'D:/ATLData/Fox-Wolf/data' # contains existing PRMS .data files
+datadir = 'D:/ATLData/BlackEarth/input' # contains existing PRMS .data files
 
 # growing season parameters
 uniform = False # T/F; T: one growing season for entire domain (incomplete option), F: growing season by hru
-nhru = 880
+nhru = 880 # only needed if growing_output = True
 frost_temp = 28.0
 growing_output = False # if True, generate .day files, otherwise just plots (much faster)
 real_data_periods = ['1961-2000', '2046-2065', '2081-2100'] # for labeling non-synthetic data on plots
 
 # output (.day files will be saved to datadir, with 'ide.data' endings replaced with 'transp.day')
-outpdf = 'D:/ATLData/Fox-Wolf/Fox-Wolf_growing_season.pdf'
+outpdf = 'D:/ATLData/BlackEarth/BEC_growing_season.pdf'
 
 # growing season plot properties
 props = {'sresa1b': {'color': 'Tomato', 'zorder': 2, 'alpha': 0.5},
@@ -194,11 +194,13 @@ if '20c3m' in scenarios:
     scenarios = [s for s in scenarios if s != '20c3m']
     for s in scenarios:
         gsl[s] = gsl[s].append(gsl['20c3m']).sort()
+    del gsl['20c3m']
 
 # resample the timeseries of growing season lengths at annual intervals (based on Jan1),
 # so that no-data periods are filled in by nans
 for s in scenarios:
     gsl[s] = gsl[s].resample('AS')
+    gsl[s].to_csv(os.path.join(datadir, '{}_growing_season_length.csv'.format(s)))
 
 fig, ax = cp.timeseries(gsl, ylabel='Growing season length (days)', props=props, title='')
 fig.savefig(outpdf, dpi=300)

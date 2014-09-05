@@ -7,6 +7,16 @@ import datetime as dt
 from collections import OrderedDict
 
 
+class parseFilenames(object):
+
+    def __init__(self, filepath):
+
+        self.f = filepath
+        self.fname = os.path.split(self.f)[1]
+        self.scenario, self.gcm, self.realization, self.timeperiod = self.fname.split('.')[:4]
+        self.run = '.'.join((self.scenario, self.gcm, self.realization))
+        self.suffix = self.f.split('.')[4].split('_')[0]
+
 class datafile:
 
     def __init__(self, datafile):
@@ -68,6 +78,34 @@ class datafile:
         # read file into pandas dataframe (index_col is kludgy but works)
         df = pd.read_csv(self.f, delim_whitespace=True, dtype=None, header=None, skiprows=len(self.header),
                               parse_dates=[[0, 1, 2, 3, 4, 5]], date_parser=parse, index_col='0_1_2_3_4_5')
+
+        return df
+
+
+class statvarFile(parseFilenames):
+
+    def read2df(self):
+        print '\nreading {}...'.format(self.f)
+
+        # get header information
+        self.nstats = int(open(self.f).readline())
+
+        # strip off the end of lines, then strip trailing '1's on basin variables; attach any segment numbers to names
+        self.statnames = [n.strip() for n in open(self.f).readlines()[:1+self.nstats]]
+        self.statnames = [n.strip(' 1') if n.endswith(' 1') else n.replace(' ', '_') for n in self.statnames]
+
+        # function to read dates from PRMS files
+        parse = lambda x: dt.datetime.strptime(x, '%Y %m %d %H %M %S')
+
+        # read file into pandas dataframe (index_col is kludgy but works)
+        df = pd.read_csv(self.f, delim_whitespace=True, header=None, skiprows=45, parse_dates=[[1, 2, 3, 4, 5, 6]],
+                         date_parser=parse, index_col=0)
+
+         # name the columns using the list of variables in the file header
+        df.columns = self.statnames
+
+        # drop the first column, which just contains consecutive integers and has nstatvar as its label
+        df = df.drop(str(self.nstats), axis=1)
 
         return df
 
@@ -139,7 +177,7 @@ class dotDay:
         for i in np.arange(6)+1:
             self.df.insert(0, names[-i], date_cols[-i])
         # add dataframe to output file
-        self.df.to_csv(ofp, sep=' ', header=False, index=False)
+        self.df.to_csv(ofp, sep=' ', header=False, index=False, float_format='%.2f')
 
         ofp.close()
 

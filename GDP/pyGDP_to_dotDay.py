@@ -22,23 +22,6 @@ import os
 import numpy as np
 from collections import defaultdict
 
-csvdir = 'D:/ATLData/Fox-Wolf/GDP' # directory containing downloaded files from wicci
-datadir = 'D:/ATLData/Fox-Wolf/input' # directory for converted files
-suffix = 'fw' # written at end of filename
-overwriteOutput = True # T/F if output file already exists, overwrite it
-
-print "Getting list of csv files..."
-try:
-    csvs = [os.path.join(csvdir, f) for f in os.listdir(csvdir) if f.lower().endswith('.csv')]
-except OSError:
-    print "can't find directory with GDP files"
-
-
-# make the output directory if it doesn't exist
-if not os.path.isdir(datadir):
-    os.makedirs(datadir)
-
-
 class gdpFiles:
 
     def __init__(self, f, suffix=''):
@@ -52,8 +35,6 @@ class gdpFiles:
         self.conv_m = 1.0 # units conversion multiplier
         self.conv_c = 0.0 # units conversion constant
         self.conv = None
-        self.dotDayfile = '{}.{}.{}.{}.{}_{}.day'.format(self.gcm, self.scenario, self.realization,
-                                                      self.period, self.suffix, self.par)
 
         # parse information from filename
         if '20c3m' in self.period:
@@ -65,6 +46,8 @@ class gdpFiles:
         else:
             raise Exception("Cannot parse time period from filename")
 
+        self.dotDayfile = '{}.{}.{}.{}.{}_{}.day'.format(self.gcm, self.scenario, self.realization,
+                                                      self.timeper, self.suffix, self.par)
         header = open(f).readlines()[0:3]
         units = header[2].split(',')[1]
 
@@ -93,24 +76,45 @@ class gdpFiles:
 ## Main Program ##
 ##################
 
-for f in csvs:
 
-    # instantiate class for GDP file
-    gdpf = gdpFiles(f, suffix)
 
-    # read file into pandas dataframe
-    df = pd.read_csv(f, skiprows=3, header=None, index_col=0, parse_dates=True)
+if __name__ == '__main__':
 
-    # convert the units
-    df = gdpf.convert_units(df)
+    csvdir = 'D:/ATLData/Fox-Wolf/GDP' # directory containing downloaded files from wicci
+    datadir = 'D:/ATLData/Fox-Wolf/input' # directory for converted files
+    suffix = 'fw' # written at end of filename
+    overwriteOutput = True # T/F if output file already exists, overwrite it
 
-    # write back out to PRMS .day format
-    dD = PRMSio.dotDay(df) # pass the dataframe to a dotDay object
+    print "Getting list of csv files..."
+    try:
+        csvs = [os.path.join(csvdir, f) for f in os.listdir(csvdir) if f.lower().endswith('.csv')]
+    except OSError:
+        print "can't find directory with GDP files"
 
-    # set the header
-    dD.header = ['created by pyGDP_to_dotDay.py\n{}     {}\n'.format(gdpf.par, dD.nhru) + 40*'#' + '\n']
 
-    # save
-    dD.write_output(os.path.join(datadir, gdpf.dotDayfile))
+    # make the output directory if it doesn't exist
+    if not os.path.isdir(datadir):
+        os.makedirs(datadir)
 
-print 'Done'
+
+    for f in csvs:
+
+        # instantiate class for GDP file
+        gdpf = gdpFiles(f, suffix)
+
+        # read file into pandas dataframe
+        df = pd.read_csv(f, skiprows=3, header=None, index_col=0, parse_dates=True)
+
+        # convert the units
+        df = gdpf.convert_units(df)
+
+        # write back out to PRMS .day format
+        dD = PRMSio.dotDay(df) # pass the dataframe to a dotDay object
+
+        # set the header
+        dD.header = ['created by pyGDP_to_dotDay.py\n{}     {}\n'.format(gdpf.par, dD.nhru) + 40*'#' + '\n']
+
+        # save
+        dD.write_output(os.path.join(datadir, gdpf.dotDayfile))
+
+    print 'Done'
