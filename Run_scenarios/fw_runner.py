@@ -1,37 +1,29 @@
 '''
-Example program to run an instance of a PRMS model using HTCondor
-this file should be in the main run folder (at the same level as the output, control, params, etc. folders)
-in Condor batch file, call this file with an argument that is tied to the job number
-i.e. in worker.bat, python runner.py %1; then in SUB file, arguments = $(Process)
+Example program to batch PRMS future climate runs without parallelization
 '''
 
 import os
-import sys
-import zipfile
+from subprocess import Popen, PIPE
 
 # make a list of PRMS control files for each run; assign to consecutive numbers starting at 0
-allfiles = os.listdir('control')
-controlfiles = [f for f in allfiles if f.lower().endswith('.control')]
-controlfiles = sorted(controlfiles)
+controldir = 'D:/ATLData/Fox-Wolf/control'
+controlfiles = sorted([os.path.join(controldir, f) for f in os.listdir(controldir) if f.lower().endswith('.control')])
+executable = 'D:/ATLData/Fox-Wolf/prms_ws_9_17_2012.exe'
+output_logfile = 'D:/ATLData/Fox-Wolf/PRMS_runs_output.txt'
+outputdir = os.path.join(os.path.split(controldir)[0], 'output')
 
 # make output dir if one doesn't exist
-if not os.path.isdir('output'):
-    os.makedirs('output')
+if not os.path.isdir(outputdir):
+    os.makedirs(outputdir)
 
-# get unique job number from Condor
-jobnumber = int(sys.argv[1])
+ofp = open(output_logfile, 'w')
+# run PRMS
+for c in controlfiles:
+    print '{}\t{}'.format(executable, c)
+    ofp.write('{}\t{}'.format(executable, c))
 
-# assign control file based on job number
-file2run=controlfiles[jobnumber].strip()
-print "\nsetting up to run %s" %(file2run)
+    p = Popen([str(executable), str(c)], stdout=PIPE, stderr=PIPE, stdin=PIPE)
 
-# launch PRMS
-os.system('prms_ws_9_17_2012.exe control\\%s' %(file2run))
+    ofp.write(p.stdout.read())
 
-# zipup PRMS results and .ggo files
-zip = zipfile.ZipFile('FW_run_%s.zip' %(jobnumber), 'w', zipfile.ZIP_DEFLATED)
-
-for files in os.listdir('output'):
-    zip.write(os.path.join('output', files))
-
-zip.close()
+ofp.close()

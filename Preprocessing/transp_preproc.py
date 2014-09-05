@@ -194,11 +194,13 @@ if '20c3m' in scenarios:
     scenarios = [s for s in scenarios if s != '20c3m']
     for s in scenarios:
         gsl[s] = gsl[s].append(gsl['20c3m']).sort()
+    del gsl['20c3m']
 
 # resample the timeseries of growing season lengths at annual intervals (based on Jan1),
 # so that no-data periods are filled in by nans
 for s in scenarios:
     gsl[s] = gsl[s].resample('AS')
+    gsl[s].to_csv(os.path.join(datadir, '{}_growing_season_length.csv'.format(s)))
 
 fig, ax = cp.timeseries(gsl, ylabel='Growing season length (days)', props=props, title='')
 fig.savefig(outpdf, dpi=300)
