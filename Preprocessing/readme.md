@@ -1,8 +1,10 @@
-#### Setting up input files for future climate scenarios:
+### Setting up input files for future climate scenarios:
 
-GSFLOW/PRMS requires information on the growing season, defined as the time period between the last killing frost of the year, and first killing frost of the year. Two options for developing growing season input from daily minimum temperature data:
+GSFLOW/PRMS requires information on the growing season, defined as the time period between the last killing frost of the year, and first killing frost of the year. 
 
-**use transp_preproc.py to write a set of transp.day files directly**  
+#####Two options for developing growing season input from daily minimum temperature data:
+
+**1) use transp_preproc.py to write a set of transp.day files directly**  
 (transp.day files tell GSFLOW/PRMS whether transpiration is on or off in each hru, on each day) 
 
  * requires a set of GSFLOW/PRMS .data files (i.e. from **pyGDP_to_data.py**) 
@@ -12,11 +14,22 @@ GSFLOW/PRMS requires information on the growing season, defined as the time peri
  * the transp.day files are included with the .data files in the input folder, and specified in the GSFLOW/PRMS control file
 
 
-**use GSFLOW/PRMS to calculate the growing season via GSFLOW_preprocess.py**  
-  (generates a preprocess.params file with information on the growing season, for each model run)
+**2) use GSFLOW/PRMS to calculate the growing season via GSFLOW_preprocess.py**  
+  (generates a preprocess.params file with information on the growing season, for each model run;
+  can't remember the specifics on this route because only used it for earlier BEC run)
 
  * make another template control file in the preprocessing directory that has 'WRITE_CLIMATE' instead of PRMS for 'model mode'
  * run **GSFLOW_preprocess.py** in WRITE_CLIMATE mode, to generate a set of tmin.day files  
  * next step is to generate a control file (one for each run) that references its respective tmin.day file (added tmin_day section to gsflow_pest.control- the template control file for gsflow_control_generator.py)  
  * ran **GSFLOW_control_generator.py** with line added to put in tmin_day file reference for respective tmin_day file; saved control files to "control_continuous" folder  
- * ran **transp_preproc_driver.py**- outputs *.year files to "frost" folder
+ * ran **transp_preproc_driver.py**- outputs *.year files to "frost" folder  
+ 
+#####Next step is to generate a set of .control files, one for each gcm-scenario-timeperiod
+
+**can use gsflow_control_generator.py**:  
+
+* reads a template control file (e.g. **example.control**) and then modifies for each gcm-scenario-timeperiod.
+* many global settings (e.g. 'temp_module') need to be modified manually in the template control file (check to make sure these are all correct!)
+
+
+	

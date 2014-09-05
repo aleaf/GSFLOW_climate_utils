@@ -4,19 +4,9 @@
     
 #### Workflow for setting up GSFLOW input for multiple future climate scenarios:  
 
-1. run **pyGDP_to_data.py** to generate .data files for PRMS input
+1. Get the data from the GDP, and then translate it to the relevant set of PRMS/GSFLOW input files (see **GDP** folder)
 
-2. run **GSFLOW_preprocess.py**
-  (generates a preprocess.params file with information on the growing season, for each model run)
-
-  For variable growing season preprocessing (WRITE_CLIMATE mode):  
- * made another template control file in the preprocessing directory that has 'WRITE_CLIMATE' instead of PRMS for model mode  
- * run **GSFLOW_preprocess.py** in WRITE_CLIMATE mode, to generate a set of tmin.day files  
- * next step is to generate a control file (one for each run) that references its respective tmin.day file (added tmin_day section to gsflow_pest.control- the template control file for gsflow_control_generator.py)  
- * ran **GSFLOW_control_generator.py** with line added to put in tmin_day file reference for respective tmin_day file; saved control files to "control_continuous" folder  
- * ran **transp_preproc_driver.py**- outputs *.year files to "frost" folder
-
-3. run **GSFLOW_control_generator.py** (generates a control file for each model run)
+2. Preprocess the tmin data to develop input files for transpiration. Write PRMS/GSFLOW control files for each future climate model run (i.e., a General Circulation Model (GCM) - future emissions scenario - time period combination; see **Preprocessing** folder)
 
 4. Setup a generic run folder for HTCondor which includes:
  * a subfolder 'input' with all of the .data files (one for each run) and transp.day files (if using WRITE_CLIMATE module)
