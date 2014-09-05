@@ -1,15 +1,22 @@
 #### Aggregating and visualizing GSFLOW results from multiple climate scenario runs
-Non-standard package requirements:  
+package requirements:  
 pandas  
 seaborn ([http://web.stanford.edu/~mwaskom/software/seaborn/](http://)); used to make the box and violin plots
 
-1. run **aggregate_GSFLOW.py** on results folder
-  (aggregate and plot results from multiple GSFLOW climate scenario runs)
-   * uses functions in **GSFLOW_utils.py**
-   * aggregates results by variable.scenario (one csv for each, which a column of daily results for each GCM)
-   * assumes that all results are in zip files (one per run) within a specified *results_folder*
 
-2. run **plots.py** to generate plots.
+1. #####Aggregate the data by output variable
+   * new way is to run **aggregate_statvar.py**
+   		* probably two orders of magnitude faster (uses pandas with minimal iteration)
+   		* currently has only been used for statvar output (not in zip files), but should be easily adoptable to other 
+   		variables
+   		* otherwise produces same output as aggregate_GSFLOW
+   * old way is to run **aggregate_GSFLOW.py** on results folder
+  (aggregate and plot results from multiple GSFLOW climate scenario runs)
+   		* uses functions in **GSFLOW_utils.py**
+   		* aggregates results by variable.scenario (one csv for each, which a column of daily results for each GCM)
+   		* assumes that all results are in zip files (one per run) within a specified *results_folder* (i.e. they were run with HTCondor)
+
+2. #####run **plots.py** to generate plots.
    * input parameters (input/output paths; gcms and scenarios to include, plot colors, etc.) are hard-coded into **plots.py**
    * **plots.py** calls the ReportFigures class in **climate_plots**, which sets all of the figure specifications and makes the plots.
    * **climate_stats.py** is used to calculate period statistics for the plots
