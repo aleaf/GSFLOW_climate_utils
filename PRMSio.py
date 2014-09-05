@@ -1,4 +1,7 @@
 __author__ = 'aleaf'
+'''
+classes for reading and writing PRMS/GSFLOW input and output
+'''
 
 import os
 import numpy as np
