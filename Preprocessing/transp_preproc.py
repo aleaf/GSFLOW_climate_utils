@@ -14,7 +14,7 @@ sys.path.append('../Postprocessing')
 import climate_plots as cp
 
 # inputs
-datadir = 'D:/ATLData/Fox-Wolf/data' # contains existing PRMS .data files
+datadir = 'D:/ATLData/Bl' # contains existing PRMS .data files
 
 # growing season parameters
 uniform = False # T/F; T: one growing season for entire domain (incomplete option), F: growing season by hru
@@ -24,7 +24,7 @@ growing_output = False # if True, generate .day files, otherwise just plots (muc
 real_data_periods = ['1961-2000', '2046-2065', '2081-2100'] # for labeling non-synthetic data on plots
 
 # output (.day files will be saved to datadir, with 'ide.data' endings replaced with 'transp.day')
-outpdf = 'D:/ATLData/Fox-Wolf/Fox-Wolf_growing_season.pdf'
+outpdf = 'D:/ATLData/BlackEarth/BEC_growing_season.pdf'
 
 # growing season plot properties
 props = {'sresa1b': {'color': 'Tomato', 'zorder': 2, 'alpha': 0.5},

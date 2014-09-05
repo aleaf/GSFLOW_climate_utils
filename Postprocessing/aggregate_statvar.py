@@ -64,8 +64,8 @@ for var in df_all.columns:
         # remove scenario info from columns (already in filename)
         dfvs.columns = [c.replace('{}.'.format(s), '') for c in dfvs.columns]
 
-    outcsv = os.path.join(output_folder, '{}.{}.csv'.format(var, s))
-    dfvs.to_csv(outcsv, index_label='Date')
+        outcsv = os.path.join(output_folder, '{}.{}.csv'.format(var, s))
+        dfvs.to_csv(outcsv, index_label='Date')
 
 print '\n\nDone'
 

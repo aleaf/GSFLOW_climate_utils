@@ -60,7 +60,10 @@ class ReportFigures():
         self.varlist = varlist
         self.gcms = gcms
         self.spinup = spinup
-        self.var_info = GSFu.get_var_info(var_name_file)
+        try:
+            self.var_info = GSFu.get_var_info(var_name_file)
+        except:
+            self.var_info = {}
         self.aggregated_results_folder = aggregated_results_folder
         self.output_base_folder = output_folder
         self.output_folder = os.path.join(output_folder, mode)
@@ -97,21 +100,27 @@ class ReportFigures():
 
     def plot_info(self, var, stat, plottype, quantile=None):
         # Set plot titles and ylabels
-
+        '''
         # set on the fly by reading the PRMS/GSFLOW variables file
-        if self.variables_table.empty or self.mode != 'statvar' or self.mode != 'csv':
+        if self.variables_table.empty or self.mode != 'statvar' and self.mode != 'csv':
             title, xlabel, ylabel, calc = GSFu.set_plot_titles(var, self.mode, stat, self.var_info,
                                                          self.aggregated_results_folder,
                                                          plottype='box', quantile=quantile)
         # set using DataFrame from pre-made table
         else:
-            info = self.variables_table[(self.variables_table['variable'] == var)
-                                        & (self.variables_table['stat'] == stat)
-                                        & (self.variables_table['plot_type'] == plottype)]
-
+        '''
+        info = self.variables_table[(self.variables_table['variable'] == var)
+                                    & (self.variables_table['stat'] == stat)
+                                    & (self.variables_table['plot_type'] == plottype)]
+        try:
             title, xlabel = info.iloc[0]['title'], info.iloc[0]['xlabel']
             ylabel = '{}, {}'.format(info.iloc[0]['ylabel_0'], info.iloc[0]['ylabel_1'])
             calc = info.iloc[0]['calc']
+
+        except:
+            title, xlabel, ylabel, calc = GSFu.set_plot_titles(var, self.mode, stat, self.var_info,
+                                                         self.aggregated_results_folder,
+                                                         plottype='box', quantile=quantile)
         return title, xlabel, ylabel, calc
 
 
@@ -277,13 +286,19 @@ class ReportFigures():
 
 
 def thousands_sep(ax):
+    '''
+    format the ticknumbers
+    '''
+
     # so clunky, but this appears to be the only way to do it
     if -10 > ax.get_ylim()[1] or ax.get_ylim()[1] > 10:
         fmt = '{:,.0f}'
     elif -10 < ax.get_ylim()[1] < -1 or 1 > ax.get_ylim()[1] > 10:
         fmt = '{:,.1f}'
+    elif -1 < ax.get_ylim()[1] < -.1 or .1 > ax.get_ylim()[1] > 1:
+        fmt = '{:,.1f}'
     else:
-        fmt = '{:,.2f}'
+        fmt = '{:,.2e}'
 
     def format_axis(y, pos):
         y = fmt.format(y)
