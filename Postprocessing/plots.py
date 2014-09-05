@@ -84,7 +84,7 @@ for mode in modes:
         # Make {scenario: csv} dictionary of the csv files for variable or observation
         csvs = dict([(scen, os.path.join(results_folder, f))
                      for scen in Scenarios2include for f in os.listdir(results_folder)
-                     if f.split()[0] == var and f.split()[0] == scen])
+                     if f.split('.')[0] == var and f.split('.')[1] == scen])
 
         # Monthly Flows
         print 'Box plot of monthly flows'
