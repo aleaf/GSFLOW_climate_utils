@@ -842,19 +842,19 @@ def set_plot_titles(var, mode, stat, var_info, aggregated_results_folder, plotty
         units = units\
             .replace('l3', 'cubic feet')\
             .replace('/t', ' per day')\
-            .replace('temp_units', 'F')
+            .replace('temp_units', 'Fahrenheit')
 
         ydescrip, calc = description(var, stat, plottype, var_info, quantile)
 
     elif mode == 'ggo':
         if 'uzfgage' in fname:
             title = var
-            units = 'ft'
+            units = 'foot'
             var = 'head'
 
         else:
             title = var
-            units = 'cfd'
+            units = 'cubic feet per day'
             var = 'baseflow'
 
         ydescrip, calc = description(var, stat, plottype, var_info, quantile)
@@ -862,14 +862,14 @@ def set_plot_titles(var, mode, stat, var_info, aggregated_results_folder, plotty
     elif mode == 'ssf':
         title = var
         ydescrip = 'head'
-        units = 'ft'
+        units = 'foot'
         var = 'head'
         ydescrip, calc = description(var, stat, plottype, var_info, quantile)
 
     elif mode == 'uzf':
         title = var
         ydescrip = var
-        units = 'ft3'
+        units = 'cubic feet per day'
         calc = 'sum'
 
     if len(ydescrip) == 0:

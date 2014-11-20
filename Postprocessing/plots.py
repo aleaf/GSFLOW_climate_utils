@@ -7,7 +7,7 @@ import climate_plots as cp
 
 # input
 results_path = '/Users/aleaf/Documents/BlackEarth/run3'
-modes = ['csv']#['statvar', 'csv', 'ggo', 'ssf', 'uzf']
+modes = ['ggo']#['statvar', 'csv', 'ggo', 'ssf', 'uzf']
 var_name_file = 'BEC.var_name' # descriptions of GSFLOW variables
 
 
@@ -17,7 +17,7 @@ GSFLOW_variables_table = 'GSFLOW_variables.csv'
 
 
 # output
-output_folder = 'D:/ATLData/Fox-Wolf/plots'
+output_folder = '/Users/aleaf/Documents/BlackEarth/run3/plots_run3_2'
 
 
 # exclude any GSFLOW/PRMS variables in this list
@@ -78,7 +78,7 @@ for mode in modes:
     Figs.make_timeseries_legend()
 
     # For each variable (or model output observation), make the plots
-    for var in Figs.varlist:
+    for var in Figs.varlist[0:3]:
         print '\n{}'.format(var)
 
         # Make {scenario: csv} dictionary of the csv files for variable or observation
