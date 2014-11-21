@@ -43,6 +43,10 @@ class ReportFigures():
     singlecolumn_width = 21/6.0
     doublecolumn_width = 42/6.0
 
+    # month abbreviations
+    month = {1: 'Jan.', 2: 'Feb.', 3: 'Mar.', 4: 'Apr.', 5: 'May', 6: 'June',
+             7: 'July', 8: 'Aug.', 9: 'Sept.', 10: 'Oct.', 11: 'Nov.', 12: 'Dec.'}
+
 
     def __init__(self, mode, compare_periods, baseline_period, gcms, spinup,
                  aggregated_results_folder, output_folder,
@@ -105,6 +109,7 @@ class ReportFigures():
                           'axes.linewidth': 0.5,
                           'axes.labelsize': 8,
                           'axes.titlesize': 9,
+                          "grid.linewidth": 0.5,
                           'xtick.major.width': 0.5,
                           'ytick.major.width': 0.5,
                           'xtick.minor.width': 0.5,
@@ -113,6 +118,8 @@ class ReportFigures():
                           'ytick.labelsize': 8,
                           'xtick.direction': 'in',
                           'ytick.direction': 'in',
+                          'xtick.major.pad': 3,
+                          'ytick.major.pad': 3,
                           'axes.edgecolor' : 'k',
                           'figure.figsize': (self.doublecolumn_width, self.doublecolumn_width * self.default_aspect)}
 
@@ -186,6 +193,7 @@ class ReportFigures():
                                      color=self.box_colors, plotstyle=self.plotstyle,
                                      rcparams=rcparams,
                                      fliersize=plt.rcParams['figure.figsize'][0], linewidth=self.plotstyle['axes.linewidth'])
+
         else:
             # settings to customize Seaborn "ticks" style (i.e. turn off grid)
             rcparams = {'figure.figsize': (self.singlecolumn_width, self.singlecolumn_width * self.tall_aspect),
@@ -326,13 +334,23 @@ class ReportFigures():
 
         plt.close('all')
         plt.rcParams.update({'font.family': self.legend_font,
-                             'font.size': self.legend_fontsize})
+                             'font.size': self.legend_fontsize,
+                             'axes.linewidth': 0.5,
+                             'axes.edgecolor': 'k'})
 
-        fig = plt.figure(1, (6, 2))
+        #                     'xtick.major.size': 0,
+        #                     'ytick.major.size': 0,
+        #                     'grid.linestyle': ''})
 
-        grid = ImageGrid(fig, 111, # similar to subplot(111)
-                            nrows_ncols = (1, 3), # creates 2x2 grid of axes
-                            axes_pad=0.1) # pad between axes in inch
+        fig = plt.figure(1, (self.singlecolumn_width, self.singlecolumn_width * self.default_aspect * 0.7))
+
+        grid = ImageGrid(fig, #111, # similar to subplot(111)
+
+                         # set the rectangle for the grid relative to the canvas size (x=1, y=1)
+                         # left, bottom, width, height
+                         rect=[0.05, 0.02, 0.3, 0.6],
+                         nrows_ncols = (1, 3), # creates 2x2 grid of axes
+                         axes_pad=0.1) # pad between axes in inch
 
         scen = self.timeseries_properties.keys()
         for i in range(grid.ngrids):
@@ -353,7 +371,17 @@ class ReportFigures():
             grid[i].set_xlim(0, 0.5)
 
             # scenario labels
-            grid[i].set_title(scen[i], loc='left', fontsize=self.legend_fontsize, family=self.legend_font)
+            title = scen[i].replace('sres', '').capitalize()
+            grid[i].set_title(title, loc='left', fontsize=self.legend_fontsize, family=self.legend_font)
+
+        # fade area to denote model spin-up
+        grid[0].axvspan(xmin=0, xmax=0.20, facecolor='1.0',
+                            alpha=0.8,
+                            linewidth=0, zorder=2)
+        grid[0].annotate('Screening indicates periods of synthetic data used for model spin-up',
+                         xy=(0.18, 0), xycoords='data', xytext=(0.5, -0.35), ha='left', va='center',
+                         arrowprops=dict(arrowstyle='-', linewidth=0.5, relpos=(0, .4)))
+
 
         # Labels for max/mean/min
         grid[i].text(1.2, 1, 'Maximum', ha='left', va='center',
@@ -363,11 +391,16 @@ class ReportFigures():
         grid[i].text(1.2, 0, 'Minimum', ha='left', va='center',
                      transform=grid[i].transAxes, family=self.legend_font, fontsize=self.legend_fontsize)
 
-        grid[2].text(0, 1.7, "EXPLANATION", ha='right', fontsize=self.legend_titlesize, family=self.legend_font)
-        grid[0].text(0, 1.33, "Emissions Scenarios", ha='left', family=self.legend_font, fontsize=self.legend_fontsize)
+        grid[2].text(0, 1.8, "EXPLANATION", ha='right', fontsize=self.legend_titlesize, family=self.legend_font)
+        grid[0].text(0, 1.4, "Emissions Scenarios", ha='left', family=self.legend_font, fontsize=self.legend_fontsize)
         plt.title('stuff')
-
-        fig.subplots_adjust(top=0.5, left=-.25)
+        '''
+        #fig.subplots_adjust(top=0.5, left=-.25, bottom=0.1)
+        with sb.axes_style("white"):
+            # left, bottom, width, height
+            fig2 = plt.figure(figsize=(6, 6))
+            bbox = fig2.add_axes([0., -1., 8, 8], frameon=False, xticks=[],yticks=[])
+        '''
 
         outfile = os.path.join(self.output_base_folder, 'timeseries_legend.pdf')
         fig.savefig(outfile, dpi=300)
@@ -491,7 +524,8 @@ def timeseries(dfs, ylabel='', props=None, Synthetic_timepers=[],
     # global settings
     alpha = 0.5
     synthetic_timeper_color = '1.0'
-    synthetic_timeper_alpha = 1 - (alpha * 0.7)
+    synthetic_timeper_alpha = 1 - (alpha * 0.4)
+
 
     for dfname in dfs.iterkeys():
 
@@ -521,6 +555,7 @@ def timeseries(dfs, ylabel='', props=None, Synthetic_timepers=[],
             ax.fill_between(per, [min] * len(per), [max] * len(per),
                             facecolor=synthetic_timeper_color, alpha=synthetic_timeper_alpha,
                             linewidth=0, zorder=0)
+
     # make title
     make_title(ax, title)
 
@@ -681,7 +716,7 @@ def sb_box_monthly(boxcolumns, baseline, compare_periods, ylabel, xlabel='', tit
     ax.set_xticks(ticks)
     months = []
     for tick in ax.get_xticks():
-        month = calendar.month_abbr[tick]
+        month = ReportFigures.month[tick]
         months.append(month)
 
     ax.set_xticklabels(months)

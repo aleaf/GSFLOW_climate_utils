@@ -719,6 +719,8 @@ def set_plot_titles(var, mode, stat, var_info, aggregated_results_folder, plotty
         especially for storage variables, and variables related to snow
         also, the 'kludge' variables below weren't included in the automatic generation of the variables table,
         because their filenames were different than the PRMS variables file
+
+        11/21/2014: this whole method needs to be re-written (and simplified!). Too much duct tape.
         '''
 
         if plottype.lower() == 'timeseries':
@@ -730,8 +732,11 @@ def set_plot_titles(var, mode, stat, var_info, aggregated_results_folder, plotty
 
             elif var == 'baseflow' or 'cfs' in var:
 
-                if 'quantile' in stat:
-                    ydescrip = 'Annual Q{:.0f}0 flow'.format(10 * (1-quantile))
+                if 'quantile' in stat and quantile==0.9:
+                    ydescrip = 'High streamflow (Q$_{:.0f}$)'.format(100 * (1-quantile))
+                    calc = 'quantile'
+                elif 'quantile' in stat and quantile==0.1:
+                    ydescrip = 'Low streamflow (Q$_{:.0f}$)'.format(100 * (1-quantile))
                     calc = 'quantile'
                 else:
                     ydescrip = 'Annual flow'
@@ -764,42 +769,67 @@ def set_plot_titles(var, mode, stat, var_info, aggregated_results_folder, plotty
                 ydescrip = 'Average water level'
                 calc = 'mean'
 
-            elif var == 'baseflow' or 'cfs' in var:
+            elif 'quantile' in stat:
 
-                if 'quantile' in stat:
-                    ydescrip = 'Q{:.0f}0 flow'.format(10 * (1-quantile))
+                if quantile==0.9:
+                    ydescrip = 'High streamflow (Q$\mathregular{_{10}}$)'
+                    calc = 'quantile'
+                elif quantile==0.1:
+                    ydescrip = 'Low streamflow (Q$\mathregular{_{90}}$)'
                     calc = 'quantile'
                 else:
-                    ydescrip = 'Average flow'
-                    calc = 'mean'
+                    # this line doesn't work, need to figure out how to use TeX with variables
+                    ydescrip = 'Q$_{{:.0f}}_0$)'.format(10 * (1-quantile))
+                    calc = 'quantile'
+
 
             elif 'annual' in stat:
 
                 # variables that should be summed for each time period
                 # (e.g. converted from inches/day reported by model to in/month or in/year)
-                if var_info[var]['Units'] == 'inches' and not var_info[var]['Desc'].split()[1].strip() == 'Storage':
+                if var == 'baseflow':
+                    ydescrip = 'Annual streamflow'
+                    calc = 'mean'
+
+                elif var_info[var]['Units'] == 'inches' and not var_info[var]['Desc'].split()[1].strip() == 'Storage':
                     ydescrip = 'Average annual total'
                     calc = 'sum'
-
-                elif 'flow rate' in var_info[var]['Desc']:
-                    ydescrip = 'Average flow'
-                    calc = 'mean'
-
+                    '''
+                elif var == 'baseflow' or 'cfs' in var or 'flow rate' in var_info[var]['Desc']:
+                    '''
                 else:
-                    ydescrip = 'Annual average'
-                    calc = 'mean'
+                    '''
+                    if 'quantile' in stat and quantile==0.9:
+                        ydescrip = 'High streamflow (Q$_{:.0f}$)'.format(100 * (1-quantile))
+                        calc = 'quantile'
+
+                    elif 'quantile' in stat and quantile==0.1:
+                        ydescrip = 'Low streamflow (Q$_{:.0f}$)'.format(100 * (1-quantile))
+                        calc = 'quantile'
+                    '''
+                    if 'flow rate' in var_info[var]['Desc']:
+                        ydescrip = 'Annual streamflow'
+                        calc = 'mean'
+
+                    else:
+                        ydescrip = 'Annual average'
+                        calc = 'mean'
 
 
             elif 'monthly' in stat:
 
                 # variables that should be summed for each time period
                 # (e.g. converted from inches/day reported by model to in/month or in/year)
-                if var_info[var]['Units'] == 'inches' and not var_info[var]['Desc'].split()[1].strip() == 'Storage':
+                if var == 'baseflow':
+                    ydescrip = 'Average monthly streamflow'
+                    calc = 'mean'
+
+                elif var_info[var]['Units'] == 'inches' and not var_info[var]['Desc'].split()[1].strip() == 'Storage':
                     ydescrip = 'Average monthly total'
                     calc = 'sum'
 
                 elif 'flow rate' in var_info[var]['Desc']:
-                    ydescrip = 'Average monthly flow'
+                    ydescrip = 'Average monthly streamflow'
                     calc = 'mean'
 
                 else:
@@ -875,7 +905,7 @@ def set_plot_titles(var, mode, stat, var_info, aggregated_results_folder, plotty
     if len(ydescrip) == 0:
         ylabel = str(units).capitalize()
     else:
-        ylabel ='%s, %s' %(ydescrip.capitalize(), units)
+        ylabel ='%s, %s' %(ydescrip, units)
     xlabel = ''
 
     return title, xlabel, ylabel, calc
