@@ -205,6 +205,8 @@ class ReportFigures():
                                     fliersize=plt.rcParams['figure.figsize'][0] * 1.5, linewidth=self.plotstyle['axes.linewidth'])
 
         self.figure_title(ax, title)
+        self.axes_numbering(ax)
+
         plt.tight_layout() # call this again so that title doesn't get cutoff
 
         outfile = self.name_output(var, stat, 'box', quantile)
@@ -230,6 +232,7 @@ class ReportFigures():
                              plotstyle=self.plotstyle, rcparams=rcparams)
 
         self.figure_title(ax, title)
+        self.axes_numbering(ax)
 
         plt.tight_layout() # call this again so that title doesn't get cutoff
 
@@ -257,6 +260,8 @@ class ReportFigures():
                                    rcparams=rcparams)
 
         self.figure_title(ax, title)
+        self.axes_numbering(ax)
+
         plt.tight_layout() # call this again so that title doesn't get cutoff
 
         outfile = self.name_output(var, stat, 'violin', quantile)
@@ -419,6 +424,33 @@ class ReportFigures():
         # with Univers 47 Condensed as the font.family, changing the weight to 'bold' doesn't work
         # manually specify a different family for the title
         ax.set_title(title.capitalize(), family='Univers 67 Condensed', zorder=zorder, loc='left')
+
+
+    def axes_numbering(self, ax):
+        '''
+        Implement these requirements from USGS standards, p 16
+        * Use commas in numbers greater than 999
+        * Label zero without a decimal point
+        * Numbers less than 1 should consist of a zero, a decimal point, and the number
+        * Numbers greater than or equal to 1 need a decimal point and trailing zero only where significant figures dictate
+        '''
+
+        # so clunky, but this appears to be the only way to do it
+        if -10 > ax.get_ylim()[0] or ax.get_ylim()[1] > 10:
+            fmt = '{:,.0f}'
+        elif -10 < ax.get_ylim()[0] < -1 or 1 > ax.get_ylim()[1] > 10:
+            fmt = '{:,.1f}'
+        elif -1 < ax.get_ylim()[0] < -.1 or .1 > ax.get_ylim()[1] > 1:
+            fmt = '{:,.1f}'
+        else:
+            fmt = '{:,.2e}'
+
+        def format_axis(y, pos):
+            y = fmt.format(y)
+            return y
+
+        ax.get_yaxis().set_major_formatter(mpl.ticker.FuncFormatter(format_axis))
+
 
 
 #############

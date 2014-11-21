@@ -879,7 +879,7 @@ def set_plot_titles(var, mode, stat, var_info, aggregated_results_folder, plotty
     elif mode == 'ggo':
         if 'uzfgage' in fname:
             title = var
-            units = 'foot'
+            units = 'feet'
             var = 'head'
 
         else:
@@ -892,7 +892,7 @@ def set_plot_titles(var, mode, stat, var_info, aggregated_results_folder, plotty
     elif mode == 'ssf':
         title = var
         ydescrip = 'head'
-        units = 'foot'
+        units = 'feet'
         var = 'head'
         ydescrip, calc = description(var, stat, plottype, var_info, quantile)
 
