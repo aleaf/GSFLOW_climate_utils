@@ -787,7 +787,7 @@ def set_plot_titles(var, mode, stat, var_info, aggregated_results_folder, plotty
 
                 # variables that should be summed for each time period
                 # (e.g. converted from inches/day reported by model to in/month or in/year)
-                if var == 'baseflow':
+                if var == 'baseflow' or 'cfs' in var:
                     ydescrip = 'Annual streamflow'
                     calc = 'mean'
 
@@ -820,7 +820,7 @@ def set_plot_titles(var, mode, stat, var_info, aggregated_results_folder, plotty
 
                 # variables that should be summed for each time period
                 # (e.g. converted from inches/day reported by model to in/month or in/year)
-                if var == 'baseflow':
+                if var == 'baseflow' or 'cfs' in var:
                     ydescrip = 'Average monthly streamflow'
                     calc = 'mean'
 

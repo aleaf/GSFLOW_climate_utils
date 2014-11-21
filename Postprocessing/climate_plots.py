@@ -553,7 +553,7 @@ def timeseries(dfs, ylabel='', props=None, Synthetic_timepers=[],
         for per in Synthetic_timepers:
             max, min = ax.get_ylim()
             ax.fill_between(per, [min] * len(per), [max] * len(per),
-                            facecolor=synthetic_timeper_color, alpha=synthetic_timeper_alpha,
+                            facecolor=synthetic_timeper_color, edgecolor=synthetic_timeper_color, alpha=synthetic_timeper_alpha,
                             linewidth=0, zorder=0)
 
     # make title
