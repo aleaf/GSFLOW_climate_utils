@@ -47,6 +47,7 @@ class ReportFigures():
     month = {1: 'Jan.', 2: 'Feb.', 3: 'Mar.', 4: 'Apr.', 5: 'May', 6: 'June',
              7: 'July', 8: 'Aug.', 9: 'Sept.', 10: 'Oct.', 11: 'Nov.', 12: 'Dec.'}
 
+    ymin0 = True # truncate plots at zero
 
     def __init__(self, mode, compare_periods, baseline_period, gcms, spinup,
                  aggregated_results_folder, output_folder,
@@ -413,7 +414,7 @@ class ReportFigures():
 
 
     def figure_title(self, ax, title, zorder=200):
-        wrap = 60
+        wrap = 50
         title = "\n".join(textwrap.wrap(title, wrap)) #wrap title
         '''
         ax.text(.025, 1.025, title,
@@ -435,13 +436,17 @@ class ReportFigures():
         * Numbers greater than or equal to 1 need a decimal point and trailing zero only where significant figures dictate
         '''
 
+        # enforce minimum value of zero on y axis
+        if self.ymin0 and ax.get_ylim()[0] < 0:
+            ax.set_ylim(0, ax.get_ylim()[1])
+
         # so clunky, but this appears to be the only way to do it
         if -10 > ax.get_ylim()[0] or ax.get_ylim()[1] > 10:
             fmt = '{:,.0f}'
-        elif -10 < ax.get_ylim()[0] < -1 or 1 > ax.get_ylim()[1] > 10:
+        elif -10 <= ax.get_ylim()[0] < -1 or 1 < ax.get_ylim()[1] <= 10:
             fmt = '{:,.1f}'
-        elif -1 < ax.get_ylim()[0] < -.1 or .1 > ax.get_ylim()[1] > 1:
-            fmt = '{:,.1f}'
+        elif -1 <= ax.get_ylim()[0] < -.1 or .1 < ax.get_ylim()[1] <= 1:
+            fmt = '{:,.2f}'
         else:
             fmt = '{:,.2e}'
 
@@ -450,6 +455,33 @@ class ReportFigures():
             return y
 
         ax.get_yaxis().set_major_formatter(mpl.ticker.FuncFormatter(format_axis))
+
+        # correct for edge cases of upper ylim == 1, 10
+        # and fix zero to have no decimal places
+        def fix_decimal(ticks):
+            # ticks are a list of strings
+            if float(ticks[-1]) == 10:
+                ticks[-1] = '10'
+            if float(ticks[-1]) == 1:
+                ticks[-1] = '1.0'
+            for i, v in enumerate(ticks):
+                if float(v) == 0:
+                    ticks[i] = '0'
+            return ticks
+
+        try:
+            [float(l._text.replace(u'\u2212', '-')) for l in ax.get_xticklabels()]
+            newxlabels = fix_decimal([fmt.format(float(l._text.replace(u'\u2212', '-'))) for l in ax.get_xticklabels()])
+            ax.set_xticklabels(newxlabels)
+        except:
+            pass
+
+        try:
+            [float(l._text.replace(u'\u2212', '-')) for l in ax.get_yticklabels()]
+            newylabels = fix_decimal([fmt.format(float(l._text.replace(u'\u2212', '-'))) for l in ax.get_yticklabels()])
+            ax.set_yticklabels(newylabels)
+        except:
+            pass
 
 
 
@@ -592,7 +624,7 @@ def timeseries(dfs, ylabel='', props=None, Synthetic_timepers=[],
     make_title(ax, title)
 
 
-    thousands_sep(ax) # fix the scientific notation on the y axis
+    #thousands_sep(ax) # fix the scientific notation on the y axis
     ax.set_ylabel(ylabel)
     ax.set_xlabel(xlabel)
 
@@ -632,32 +664,37 @@ def sb_violin_annual(boxcolumns, baseline, compare_periods, ylabel, xlabel='', t
                            linewidth=plt.rcParams['axes.linewidth'])
 
         # plot the population of streamflows within each violin
+
+        ax2 = ax.twinx()
+        ax2.set_ylim(ax.get_ylim())
+        ax.set_autoscale_on(False)
         for i in range(len(compare_periods)):
-            plt.plot([i+1]*len(boxcolumns[i]), boxcolumns[i].tolist(), markerfacecolor='k', linestyle='', marker='o')
+            ax2.scatter([i+1]*len(boxcolumns[i]), boxcolumns[i].values)
+            #ax.plot([i+1]*len(boxcolumns[i]), boxcolumns[i].tolist(), markerfacecolor='k', linestyle='', marker='o', axes=ax)
 
-        ax.axhline(y=baseline[0], xmin=0.05, xmax=0.95, color='r', linewidth=plt.rcParams['axes.linewidth']*2)
+        ax2.axhline(y=baseline[0], xmin=0.05, xmax=0.95, color='r', linewidth=plt.rcParams['axes.linewidth']*2)
+        ax2.set_visible(False)
+        print baseline[0]
+        print boxcolumns[1].quantile(q=0.25)
+        print boxcolumns[1].quantile(q=0.5)
+        print boxcolumns[1].quantile(q=0.75)
 
-        # make title
-        make_title(ax, title)
-
-        thousands_sep(ax)
         ax.set_ylabel(ylabel)
         ax.set_xlabel(xlabel)
-
+        '''
         # set reasonable lower y limit for violins
         # (kernals can dip below zero even if data doesn't; inappropriate for strictly positive variables)
         minval = np.min([b.min() for b in boxcolumns])
         if minval < 0:
-            ymin = np.min([b.min() for b in boxcolumns])
+            ymin = minval
         else:
             ymin = ax.get_ylim()[0]
         ax.set_ylim(ymin, ax.get_ylim()[1])
-
+        '''
     except:
         print sys.exc_info()
-        ax = None
 
-    plt.tight_layout()
+    #plt.tight_layout()
     return fig, ax
 
 
@@ -685,7 +722,7 @@ def sb_box_annual(boxcolumns, baseline, compare_periods, ylabel, xlabel='', titl
     # make title
     make_title(ax, title)
 
-    thousands_sep(ax)
+    #thousands_sep(ax)
     ax.set_ylabel(ylabel)
     ax.set_xlabel(xlabel)
     #ax.set_ylim(0, ax.get_ylim()[1])
@@ -740,7 +777,7 @@ def sb_box_monthly(boxcolumns, baseline, compare_periods, ylabel, xlabel='', tit
                    color='r', linewidth=plt.rcParams['axes.linewidth']*2)
 
     # clean up the axes
-    thousands_sep(ax) # fix the scientific notation on the y axis
+    #thousands_sep(ax) # fix the scientific notation on the y axis
 
     # reset the ticks so that there is one per month (one per group)
     frequency = xtick_freq # 1 for every month, 2 for every other, etc.
