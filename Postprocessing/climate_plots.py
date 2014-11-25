@@ -10,7 +10,6 @@ from mpl_toolkits.axes_grid1 import ImageGrid
 import matplotlib.patheffects as PathEffects
 import seaborn as sb
 import textwrap
-import calendar
 import climate_stats as cs
 import GSFLOW_utils as GSFu
 
@@ -28,10 +27,11 @@ newparams = {'font.family': 'Univers 57 Condensed Light',
 # Update the global rcParams dictionary with the new parameter choices
 plt.rcParams.update(newparams)
 
+'''
 # set/modify global Seaborn defaults
 # update any overlapping parameters in the seaborn 'paper' style with the custom values above
 sb.set_context("paper", rc=newparams)
-
+'''
 
 
 
@@ -62,7 +62,8 @@ class ReportFigures():
                  legend_font='Univers 67 Condensed',
                  legend_titlesize=8,
                  plotstyle={},
-                 box_colors=['SteelBlue', 'Khaki']):
+                 box_colors=['SteelBlue', 'Khaki'],
+                 stat_summary=True):
 
         '''
         ``plotstyle``: Dictionary containing rc settings for overriding Seaborn defaults
@@ -90,6 +91,7 @@ class ReportFigures():
         self.output_folder = os.path.join(output_folder, mode)
         self.mode = mode
         self.compare_periods = compare_periods
+        self.dates = ['-'.join(map(str, per)) for per in self.compare_periods]
         self.baseline_period = baseline_period
         self.synthetic_timepers = synthetic_timepers
         self.timeseries_properties = timeseries_properties
@@ -126,6 +128,14 @@ class ReportFigures():
 
         # update default plot settings with any specified
         self.plotstyle.update(plotstyle)
+
+        # make a summary file of statistics by variable and period (for checking box/violin plots)
+        if stat_summary:
+            self.stat_summary = True
+            self.ofp = open('summary_stats.csv', 'w')
+            self.ofp.write('variable,period,stat,upperQ,median,lowerQ,baseline\n')
+        else:
+            self.stat_summary=False
 
 
         if not self.variables_table.empty:
@@ -243,12 +253,23 @@ class ReportFigures():
 
 
     def make_violin(self, csvs, var, stat, quantile=None):
+
         # Set plot titles and ylabels
         title, xlabel, ylabel, calc = self.plot_info(var, stat, 'box', quantile=quantile)
 
         # calcualte period statistics for violins
         boxcolumns, baseline = cs.period_stats(csvs, self.compare_periods, stat, self.baseline_period,
                                                calc=calc, quantile=quantile)
+
+        # write summary information (for checking plots)
+        if self.stat_summary:
+            for i, d in enumerate(self.dates):
+                self.ofp.write('{},{},{},{:.2f},{:.2f},{:.2f},{:.2f}\n'.format(var, d, stat,
+                                                                       boxcolumns[i].quantile(q=0.75),
+                                                                       boxcolumns[i].quantile(q=0.50),
+                                                                       boxcolumns[i].quantile(q=0.25),
+                                                                       baseline[i]))
+
 
         # settings to customize Seaborn "ticks" style (i.e. turn off grid)
         rcparams = {'figure.figsize': (self.singlecolumn_width, self.singlecolumn_width * self.tall_aspect),
@@ -664,33 +685,16 @@ def sb_violin_annual(boxcolumns, baseline, compare_periods, ylabel, xlabel='', t
                            linewidth=plt.rcParams['axes.linewidth'])
 
         # plot the population of streamflows within each violin
-
-        ax2 = ax.twinx()
-        ax2.set_ylim(ax.get_ylim())
         ax.set_autoscale_on(False)
-        for i in range(len(compare_periods)):
-            ax2.scatter([i+1]*len(boxcolumns[i]), boxcolumns[i].values)
-            #ax.plot([i+1]*len(boxcolumns[i]), boxcolumns[i].tolist(), markerfacecolor='k', linestyle='', marker='o', axes=ax)
 
-        ax2.axhline(y=baseline[0], xmin=0.05, xmax=0.95, color='r', linewidth=plt.rcParams['axes.linewidth']*2)
-        ax2.set_visible(False)
-        print baseline[0]
-        print boxcolumns[1].quantile(q=0.25)
-        print boxcolumns[1].quantile(q=0.5)
-        print boxcolumns[1].quantile(q=0.75)
+        for i in range(len(compare_periods)):
+            ax.plot([i+1]*len(boxcolumns[i]), boxcolumns[i].tolist(), markerfacecolor='k', linestyle='', marker='o', axes=ax)
+
+        ax.axhline(y=baseline[0], xmin=0.05, xmax=0.95, color='r', linewidth=plt.rcParams['axes.linewidth']*2)
 
         ax.set_ylabel(ylabel)
         ax.set_xlabel(xlabel)
-        '''
-        # set reasonable lower y limit for violins
-        # (kernals can dip below zero even if data doesn't; inappropriate for strictly positive variables)
-        minval = np.min([b.min() for b in boxcolumns])
-        if minval < 0:
-            ymin = minval
-        else:
-            ymin = ax.get_ylim()[0]
-        ax.set_ylim(ymin, ax.get_ylim()[1])
-        '''
+
     except:
         print sys.exc_info()
 
