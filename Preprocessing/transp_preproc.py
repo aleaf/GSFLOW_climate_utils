@@ -13,6 +13,14 @@ import sys
 sys.path.append('../Postprocessing')
 import climate_plots as cp
 
+try:
+    from Figures import ReportFigures
+    figures = ReportFigures()
+    figures.set_style()
+
+except:
+    'Figures module not found; needed for USGS report formatting'
+
 # inputs
 datadir = 'D:/ATLData/BlackEarth/input' # contains existing PRMS .data files
 

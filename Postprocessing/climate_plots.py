@@ -43,11 +43,16 @@ class ReportFigures():
     singlecolumn_width = 21/6.0
     doublecolumn_width = 42/6.0
 
+    # title wraps
+    singlecolumn_title_wrap = 50
+    doublecolumn_title_wrap = 120
+
     # month abbreviations
     month = {1: 'Jan.', 2: 'Feb.', 3: 'Mar.', 4: 'Apr.', 5: 'May', 6: 'June',
              7: 'July', 8: 'Aug.', 9: 'Sept.', 10: 'Oct.', 11: 'Nov.', 12: 'Dec.'}
 
-    ymin0 = True # truncate plots at zero
+    # no negative values on yaxis of plots
+    ymin0 = False
 
     def __init__(self, mode, compare_periods, baseline_period, gcms, spinup,
                  aggregated_results_folder, output_folder,
@@ -133,7 +138,7 @@ class ReportFigures():
         if stat_summary:
             self.stat_summary = True
             self.ofp = open('summary_stats.csv', 'w')
-            self.ofp.write('variable,period,stat,upperQ,median,lowerQ,baseline\n')
+            self.ofp.write('variable,period,stat,max,upperQ,median,lowerQ,min,baseline\n')
         else:
             self.stat_summary=False
 
@@ -204,6 +209,7 @@ class ReportFigures():
                                      color=self.box_colors, plotstyle=self.plotstyle,
                                      rcparams=rcparams,
                                      fliersize=plt.rcParams['figure.figsize'][0], linewidth=self.plotstyle['axes.linewidth'])
+            self.figure_title(ax, title, wrap=self.doublecolumn_title_wrap)
 
         else:
             # settings to customize Seaborn "ticks" style (i.e. turn off grid)
@@ -215,7 +221,8 @@ class ReportFigures():
                                     rcparams=rcparams,
                                     fliersize=plt.rcParams['figure.figsize'][0] * 1.5, linewidth=self.plotstyle['axes.linewidth'])
 
-        self.figure_title(ax, title)
+            self.figure_title(ax, title, wrap=self.singlecolumn_title_wrap)
+
         self.axes_numbering(ax)
 
         plt.tight_layout() # call this again so that title doesn't get cutoff
@@ -242,7 +249,7 @@ class ReportFigures():
         fig, ax = timeseries(dfs, ylabel=ylabel, props=self.timeseries_properties, Synthetic_timepers=self.synthetic_timepers,
                              plotstyle=self.plotstyle, rcparams=rcparams)
 
-        self.figure_title(ax, title)
+        self.figure_title(ax, title, wrap=self.singlecolumn_title_wrap)
         self.axes_numbering(ax)
 
         plt.tight_layout() # call this again so that title doesn't get cutoff
@@ -264,11 +271,14 @@ class ReportFigures():
         # write summary information (for checking plots)
         if self.stat_summary:
             for i, d in enumerate(self.dates):
-                self.ofp.write('{},{},{},{:.2f},{:.2f},{:.2f},{:.2f}\n'.format(var, d, stat,
-                                                                       boxcolumns[i].quantile(q=0.75),
-                                                                       boxcolumns[i].quantile(q=0.50),
-                                                                       boxcolumns[i].quantile(q=0.25),
-                                                                       baseline[i]))
+                self.ofp.write('{},{},{},{:.2f},{:.2f},{:.2f},{:.2f},{:.2f},{:.2f}\n'
+                               .format(var, d, stat,
+                                       np.max(boxcolumns[i]),
+                                       boxcolumns[i].quantile(q=0.75),
+                                       boxcolumns[i].quantile(q=0.50),
+                                       boxcolumns[i].quantile(q=0.25),
+                                       np.min(boxcolumns[i]),
+                                       baseline[i]))
 
 
         # settings to customize Seaborn "ticks" style (i.e. turn off grid)
@@ -281,8 +291,14 @@ class ReportFigures():
                                    color=self.box_colors, plotstyle=self.plotstyle,
                                    rcparams=rcparams)
 
-        self.figure_title(ax, title)
+        self.figure_title(ax, title, wrap=self.singlecolumn_title_wrap)
+
+        # suppress negative numbers on yaxis if the data aren't negative
+        if not np.min([np.min(boxcolumns), np.min(baseline)]) < 0:
+            self.ymin0 = True
+
         self.axes_numbering(ax)
+        self.ymin0 = False # go back to default
 
         plt.tight_layout() # call this again so that title doesn't get cutoff
 
@@ -434,8 +450,8 @@ class ReportFigures():
         plt.close()
 
 
-    def figure_title(self, ax, title, zorder=200):
-        wrap = 50
+    def figure_title(self, ax, title, zorder=200, wrap=50):
+        wrap = wrap
         title = "\n".join(textwrap.wrap(title, wrap)) #wrap title
         '''
         ax.text(.025, 1.025, title,
@@ -457,9 +473,10 @@ class ReportFigures():
         * Numbers greater than or equal to 1 need a decimal point and trailing zero only where significant figures dictate
         '''
 
-        # enforce minimum value of zero on y axis
+        # enforce minimum value of zero on y axis if data is positive
         if self.ymin0 and ax.get_ylim()[0] < 0:
             ax.set_ylim(0, ax.get_ylim()[1])
+
 
         # so clunky, but this appears to be the only way to do it
         if -10 > ax.get_ylim()[0] or ax.get_ylim()[1] > 10:
@@ -685,7 +702,7 @@ def sb_violin_annual(boxcolumns, baseline, compare_periods, ylabel, xlabel='', t
                            linewidth=plt.rcParams['axes.linewidth'])
 
         # plot the population of streamflows within each violin
-        ax.set_autoscale_on(False)
+        #ax.set_autoscale_on(False)
 
         for i in range(len(compare_periods)):
             ax.plot([i+1]*len(boxcolumns[i]), boxcolumns[i].tolist(), markerfacecolor='k', linestyle='', marker='o', axes=ax)

@@ -7,7 +7,7 @@ import climate_plots as cp
 
 # input
 results_path = '/Users/aleaf/Documents/BlackEarth/run3'
-modes = ['statvar'] #['statvar', 'csv', 'ggo', 'ssf', 'uzf']
+modes = ['csv'] #['statvar', 'csv', 'ggo', 'ssf', 'uzf']
 var_name_file = 'BEC.var_name' # descriptions of GSFLOW variables
 
 # create a variables table by running GSFLOW_utils.make_var_table()
@@ -83,6 +83,11 @@ for mode in modes:
 
     # For each variable (or model output observation), make the plots
     for var in Figs.varlist:
+        '''
+        if not var == 'fred_springs':
+            continue
+        '''
+
         print '\n{}'.format(var)
 
         # Make {scenario: csv} dictionary of the csv files for variable or observation
@@ -127,3 +132,5 @@ for mode in modes:
                         print 'Box'
                         Figs.make_box(csvs, var, stat, quantile=quantile)
 
+    if Figs.stat_summary:
+        Figs.ofp.close()

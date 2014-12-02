@@ -60,7 +60,7 @@ def annual_timeseries(csvs, gcms, spinup, stat, calc='mean', quantile=None):
         df = df[tspinup:]
 
         # replace any zeros with NaNs
-        df = df.replace({0:np.nan})
+        #df = df.replace({0:np.nan})
 
         # find any years with only one value (due to date convention)
         # reset values for those years to NaN
@@ -152,13 +152,15 @@ def period_stats(csvs, compare_periods, stat, baseline_period=np.array([]), calc
             #dfg = dfg.stack() # stack data into vector containing means for each year in period and gcm-scenario combination
             dfg = dfg.mean(axis=0).dropna() # make vector of means for each gcm-scenario combination
 
-        # population of quantiles from all scenario-gcm combinations; excludes 0 values
+        # population of quantiles from all scenario-gcm combinations;
+        # do not exclude zero values from quantile computations
         elif stat == 'quantile':
-            dfg = df[tstart:tstop].replace({0: np.nan}).groupby(lambda x: x.year).quantile(q=quantile, axis=0)
+            #dfg = df[tstart:tstop].replace({0: np.nan}).groupby(lambda x: x.year).quantile(q=quantile, axis=0)
+            dfg = df[tstart:tstop].groupby(lambda x: x.year).quantile(q=quantile, axis=0)
             # (returns n years in period x n GCM-scenarios DataFrame)
 
             #dfg = dfg.stack()
-            dfg = dfg.mean(axis=0).dropna()
+            dfg = dfg.mean(axis=0).dropna() # returns mean across n years in period, for each scenario that is not nan
 
         #dfg['date'] = dfg.index
         #dfg['period'] = ['-'.join(map(str, per))] * len(dfg)
@@ -199,7 +201,8 @@ def period_stats(csvs, compare_periods, stat, baseline_period=np.array([]), calc
 
         # population of quantiles from all scenario-gcm combinations; excludes 0 values
         elif stat == 'quantile':
-            bl = df[bstart:bstop].replace({0: np.nan}).groupby(lambda x: x.year).quantile(q=quantile, axis=0)
+            #bl = df[bstart:bstop].replace({0: np.nan}).groupby(lambda x: x.year).quantile(q=quantile, axis=0)
+            bl = df[bstart:bstop].groupby(lambda x: x.year).quantile(q=quantile, axis=0)
             bl = np.array([bl.mean(axis=1).mean()])
 
         # make baseline value for each box
