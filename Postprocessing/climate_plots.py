@@ -587,21 +587,22 @@ def make_title(ax, title, zorder=1000):
 def timeseries(dfs, ylabel='', props=None, Synthetic_timepers=[],
                clip_outliers=True, xlabel='', title='',
                plotstyle={}, rcparams={}):
+    """
+    Makes a timeseries plot from dataframe(s) containing multiple timeseries of the same phenomena
+    (e.g. multiple GCM realizations of future climate
+    Plots the mean of all columns, enveloped by the min, max values of each row (as a fill-between plot)
+    dfs : dict of dataframes to plot
+    One dataframe per climate scenario; dataframes should have datetime indices
 
-    # dfs = dict of dataframes to plot (one dataframe per climate scenario)
-    # window= width of moving avg window in timeunits
-    # function= moving avg. fn to use (see Pandas doc)
-    # title= plot title, ylabel= y-axis label
-    # spinup= length of time (years) to trim off start of results when model is 'spinning up'
-    # kwargs
-
+    """
 
     # set/modify Seaborn defaults
     if len(plotstyle) == 0:
         plotstyle = {'xtick.direction': 'in',
                      'ytick.direction': 'in',
+                     'xtick.minor.size': 0,
                      'axes.grid': False,
-                     'grid.color': 'w'}
+                     'grid.linewidth': 0}
 
     sb.set() # reset default parameters first
     sb.set_style("ticks", plotstyle)
