@@ -507,20 +507,34 @@ class ReportFigures():
                     ticks[i] = '0'
             return ticks
 
+        text_xlabels = False
+        text_ylabels = False
         try:
+            # only proceed if labels are numbers (there might be a better way to do this)
             [float(l._text.replace(u'\u2212', '-')) for l in ax.get_xticklabels()]
-            newxlabels = fix_decimal([fmt.format(float(l._text.replace(u'\u2212', '-'))) for l in ax.get_xticklabels()])
+            #newxlabels = fix_decimal([fmt.format(float(l._text.replace(u'\u2212', '-'))) for l in ax.get_xticklabels()])
+            ax.get_yticks()
+            newxlabels = fix_decimal([fmt.format(t) for t in ax.get_yticks()])
             ax.set_xticklabels(newxlabels)
+
         except:
+            text_xlabels = True
             pass
 
         try:
+            # only proceed if labels are numbers (there might be a better way to do this)
             [float(l._text.replace(u'\u2212', '-')) for l in ax.get_yticklabels()]
-            newylabels = fix_decimal([fmt.format(float(l._text.replace(u'\u2212', '-'))) for l in ax.get_yticklabels()])
+            ax.get_yticks()
+            newylabels = fix_decimal([fmt.format(t) for t in ax.get_yticks()])
+            #newylabels = fix_decimal([fmt.format(float(l._text.replace(u'\u2212', '-'))) for l in ax.get_yticklabels()])
             ax.set_yticklabels(newylabels)
         except:
+            text_ylabels = True
             pass
 
+        if text_xlabels and text_ylabels:
+            print "Warning: Tick labels on both x and y axes are text. Or the canvas may not be drawn, in which" \
+                  "case the tick formatter won't work. Check the code for generating the plot."
 
 
 #############
@@ -679,7 +693,7 @@ def timeseries(dfs, ylabel='', props=None, Synthetic_timepers=[],
 
 
 def sb_violin_annual(boxcolumns, baseline, compare_periods, ylabel, xlabel='', title='', color=['SteelBlue', 'Khaki'],
-                     plotstyle={}, rcparams={}):
+                     plotstyle={}, rcparams={}, ymin0=True):
 
     sb.set() # reset default parameters first
     sb.set_style("whitegrid", plotstyle)
@@ -716,7 +730,11 @@ def sb_violin_annual(boxcolumns, baseline, compare_periods, ylabel, xlabel='', t
     except:
         print sys.exc_info()
 
-    #plt.tight_layout()
+    # reset yaxis to zero if the violin dips below zero and there are no zero data
+    if ymin0 and not np.min([np.min(boxcolumns), np.min(baseline)]) < 0 and ax.get_ylim()[0] < 0:
+        ax.set_ylim(0, ax.get_ylim()[1])
+
+    plt.tight_layout()
     return fig, ax
 
 
