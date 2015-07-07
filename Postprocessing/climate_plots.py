@@ -208,7 +208,7 @@ class ReportFigures():
             fig, ax = sb_box_monthly(boxcolumns, baseline, self.compare_periods, ylabel,
                                      color=self.box_colors, plotstyle=self.plotstyle,
                                      rcparams=rcparams,
-                                     fliersize=plt.rcParams['figure.figsize'][0], linewidth=self.plotstyle['axes.linewidth'])
+                                     fliersize=3, linewidth=self.plotstyle['axes.linewidth'])
             self.figure_title(ax, title, wrap=self.doublecolumn_title_wrap)
 
         else:
@@ -421,7 +421,7 @@ class ReportFigures():
         grid[0].axvspan(xmin=0, xmax=0.20, facecolor='1.0',
                             alpha=0.8,
                             linewidth=0, zorder=2)
-        grid[0].annotate('Screening indicates periods of synthetic data used for model spin-up',
+        grid[0].annotate('Screening indicates model spin-up period',
                          xy=(0.18, 0), xycoords='data', xytext=(0.5, -0.35), ha='left', va='center',
                          arrowprops=dict(arrowstyle='-', linewidth=0.5, relpos=(0, .4)))
 
@@ -739,7 +739,7 @@ def sb_violin_annual(boxcolumns, baseline, compare_periods, ylabel, xlabel='', t
 
 
 def sb_box_annual(boxcolumns, baseline, compare_periods, ylabel, xlabel='', title='', color=['SteelBlue', 'Khaki'],
-                  plotstyle={}, rcparams={}, **kwargs):
+                  plotstyle={}, rcparams={}, ax=None, **kwargs):
 
     sb.set() # reset default parameters first
     sb.set_style("whitegrid", plotstyle)
@@ -753,9 +753,10 @@ def sb_box_annual(boxcolumns, baseline, compare_periods, ylabel, xlabel='', titl
 
     dates = ['-'.join(map(str, per)) for per in compare_periods]
 
-    fig = plt.figure()
+    if ax is None:
+        fig = plt.figure()
 
-    ax = sb.boxplot(boxcolumns, names=dates, color=color,  **kwargs)
+    ax = sb.boxplot(boxcolumns, names=dates, color=color,  ax=ax, **kwargs)
 
     ax.axhline(y=baseline[0], xmin=0.05, xmax=0.95, color='r', linewidth=plt.rcParams['axes.linewidth']*2)
 

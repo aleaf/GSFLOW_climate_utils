@@ -45,7 +45,7 @@ for f in statvarfiles:
 print '\npivoting to variables and saving...'
 variables = [c for c in df_all.columns if c != 'run']
 
-for var in df_all.columns:
+for var in variables:
     print var,
     # select data for variable
     df_all['Date'] = df_all.index
