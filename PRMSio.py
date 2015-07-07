@@ -85,6 +85,89 @@ class datafile:
         return df
 
 
+class netCDF4dataset:
+    
+    def __init__(self, x_col='x', y_col='y', time_col='time',
+                 proj4=None):
+        """
+        Attributes
+        ----------
+        x_col : str
+            name of variable in netCDF dataset containing x coordinates
+        y_col : str
+            name of variable in netCDF dataset containing y coordinates
+        time_col : str
+            name of variable in netCDF dataset containing timestamps
+        X : array
+            x-coordinates of points within model extent
+        Y : array
+            y-coordinates of points within model extent 
+        """
+        self.x_col = x_col
+        self.y_col = y_col
+        self.time_col = time_col
+        
+        # boolean arrays, of same length as x/y coordinates in dataset; 
+        # True if coordinate within model bounding box
+        self._yinds = np.array([])
+        self._xinds = np.array([])
+        
+        self._within = np.array([]) # boolean array indicating which points are within model extent
+        
+        self.X = np.array([])
+        self.Y = np.array([])
+            
+        self.proj4 = proj4
+        
+    def set_extent(self, ncfile, model_extent, model_extent_buffer=1000):
+        
+        f = netCDF4.Dataset(ncfile)
+        
+        # read geometry of model extent; project to coordinate system of netCDF data
+        model_extent = shape(fiona.open(model_extent).next()['geometry'])
+        model_proj4 = get_proj4(model_extent_shape)
+        model_extent = project(model_extent, model_proj4, self.proj4)
+        model_extent_buff = model_extent.buffer(model_extent_buffer)
+
+        X, Y = f.variables[self.x_col], f.variables[self.y_col]
+        xinds = (X[:] > model_extent_buff.bounds[0]) & (X[:] < model_extent_buff.bounds[2])
+        yinds = (Y[:] > model_extent_buff.bounds[1]) & (Y[:] < model_extent_buff.bounds[3])
+
+        bbox_points_xy = np.reshape(np.meshgrid(X[xinds], Y[yinds]), (2, len(X[xinds]) * len(Y[yinds])))
+        bbox_points = [Point(bbox_points_xy[0, i], bbox_points_xy[1, i]) for i in range(np.shape(bbox_points_xy)[1])]
+        within = np.array([p.within(model_extent) for p in bbox_points])
+
+        self._xinds = xinds
+        self._yinds = yinds
+        self._within = within
+        self.X = bbox_points_xy[0, within]
+        self.Y = bbox_points_xy[1, within]
+
+    def get_data(self, ncfiles, var_col, dropNAN=True):
+    
+        if not isinstance(ncfile, list):
+            ncfiles = [ncfiles]
+        
+        df = pd.DataFrame(columns=[self.x_col, self.y_col, var_col, self.time_col])
+        for ncfile in ncfiles:
+            f = netCDF4.Dataset(ncfile)
+            var = f.variables[var_col]
+            for i in range(var.shape[0]):
+
+                # reshape variable values to 1-D array; cull to extent bbox
+                var_rs = np.reshape(var[i, self._yinds, self._xinds], 
+                                    (len(X[self._xinds]) * len(Y[self._yinds])))
+                # cull to actual extent
+                var_rs = var_rs[self._within]
+                time = f.variables[self.time_col][i]
+                dft = pd.DataFrame({self.x_col: self.X,
+                                    self.y_col: self.Y,
+                                    self.time_col: time,
+                                    var_col: var_rs})
+                df = df.append(dft)
+        return df
+
+
 class statvarFile(parseFilenames):
 
     def read2df(self):
