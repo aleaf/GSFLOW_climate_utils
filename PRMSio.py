@@ -8,6 +8,12 @@ import numpy as np
 import pandas as pd
 import datetime as dt
 from collections import OrderedDict
+import fiona
+from shapely.geometry import shape, Point
+import netCDF4
+import pyproj
+from GISio import get_proj4
+from GISops import project
 
 
 class parseFilenames(object):
@@ -88,6 +94,7 @@ class datafile:
 class netCDF4dataset:
     
     def __init__(self, x_col='x', y_col='y', time_col='time',
+                 t0=0, time_units='d',
                  proj4=None):
         """
         Attributes
@@ -98,6 +105,10 @@ class netCDF4dataset:
             name of variable in netCDF dataset containing y coordinates
         time_col : str
             name of variable in netCDF dataset containing timestamps
+        t0 : str
+            argument to pandas.to_datetime; adds an offset onto the time values.
+        time_units : str
+            argument to pandas.to_datetime specifying time units.
         X : array
             x-coordinates of points within model extent
         Y : array
@@ -106,6 +117,9 @@ class netCDF4dataset:
         self.x_col = x_col
         self.y_col = y_col
         self.time_col = time_col
+        self.time_units = time_units
+        self.t0 = pd.to_datetime(t0)
+        self._toffset = self.t0 - pd.to_datetime(0)
         
         # boolean arrays, of same length as x/y coordinates in dataset; 
         # True if coordinate within model bounding box
@@ -124,8 +138,8 @@ class netCDF4dataset:
         f = netCDF4.Dataset(ncfile)
         
         # read geometry of model extent; project to coordinate system of netCDF data
+        model_proj4 = get_proj4(model_extent)
         model_extent = shape(fiona.open(model_extent).next()['geometry'])
-        model_proj4 = get_proj4(model_extent_shape)
         model_extent = project(model_extent, model_proj4, self.proj4)
         model_extent_buff = model_extent.buffer(model_extent_buffer)
 
@@ -137,34 +151,52 @@ class netCDF4dataset:
         bbox_points = [Point(bbox_points_xy[0, i], bbox_points_xy[1, i]) for i in range(np.shape(bbox_points_xy)[1])]
         within = np.array([p.within(model_extent) for p in bbox_points])
 
-        self._xinds = xinds
+        self._xinds = xinds # indices of points within model bounding box
         self._yinds = yinds
-        self._within = within
+        self._within = within # boolean array indicating points within model extent
+        self._allX = X # all x, y coordinates within netcdf dataset
+        self._allY = Y
         self.X = bbox_points_xy[0, within]
         self.Y = bbox_points_xy[1, within]
 
-    def get_data(self, ncfiles, var_col, dropNAN=True):
+    def get_data(self, ncfiles, var_col, dropna=True, 
+                 output_proj4=None, datetime_output=True):
     
-        if not isinstance(ncfile, list):
+        if not isinstance(ncfiles, list):
             ncfiles = [ncfiles]
         
-        df = pd.DataFrame(columns=[self.x_col, self.y_col, var_col, self.time_col])
+        if output_proj4 is not None:
+            print 'reprojecting output coordinates to:\n{}\n'.format(output_proj4)
+            pr1 = pyproj.Proj(self.proj4)
+            pr2 = pyproj.Proj(output_proj4)
+            X, Y = pyproj.transform(pr1, pr2, self.X, self.Y)
+        else:
+            X, Y = self.X, self.Y
+        df = pd.DataFrame(columns=['point', self.x_col, self.y_col, var_col, self.time_col])
         for ncfile in ncfiles:
+            print('\r{}'.format(ncfile)),
             f = netCDF4.Dataset(ncfile)
             var = f.variables[var_col]
             for i in range(var.shape[0]):
-
                 # reshape variable values to 1-D array; cull to extent bbox
                 var_rs = np.reshape(var[i, self._yinds, self._xinds], 
-                                    (len(X[self._xinds]) * len(Y[self._yinds])))
+                                    (len(self._allX[self._xinds]) * len(self._allY[self._yinds])))
                 # cull to actual extent
                 var_rs = var_rs[self._within]
                 time = f.variables[self.time_col][i]
-                dft = pd.DataFrame({self.x_col: self.X,
-                                    self.y_col: self.Y,
+                dft = pd.DataFrame({self.x_col: X,
+                                    self.y_col: Y,
                                     self.time_col: time,
                                     var_col: var_rs})
+                if datetime_output:
+                    dft['time'] = pd.to_datetime(dft.time.values, unit=self.time_units) + self._toffset
+                if dropna:
+                    dft.dropna(axis=0, inplace=True)
+                dft['point'] = range(len(dft))
+                dft.index = pd.MultiIndex.from_product([np.unique(dft.time.values), dft.point.values])
+
                 df = df.append(dft)
+        print('\n')
         return df
 
 
