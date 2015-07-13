@@ -16,6 +16,16 @@ from GISio import get_proj4
 from GISops import project
 
 
+def prms_date(df):
+    date_cols = [df.index.year,
+                 df.index.month,
+                 df.index.day,
+                         0, 0, 0]
+    names = ['Y', 'M', 'D', 'h', 'm', 's']
+    for i in np.arange(6)+1:
+        df.insert(0, names[-i], date_cols[-i])
+
+
 class parseFilenames(object):
 
     def __init__(self, filepath):
@@ -198,6 +208,24 @@ class netCDF4dataset:
                 df = df.append(dft)
         print('\n')
         return df
+
+    def write_to_dotData(self, df, outfile='climate.data'):
+
+        df['point2'] = df.point + df.point.max() + 1
+        df['point3'] = df.point + df.point2.max() + 1
+
+        data = pd.DataFrame(index=df.time.unique())
+        for col, var in {'point': 'tmin', 'point2': 'tmax', 'point3': 'prcp'}.items():
+            pivot = df.pivot(index='time', columns=col, values=var).copy()
+            data = data.join(pivot)
+
+        data.sort(axis=1, inplace=True)
+        prms_date(data)
+
+        f = open(outfile, 'w')
+        f.write('tmin {0:.0f}\ntmax {0:.0f}\nprcp {0:.0f}\n'.format(len(df)))
+        f.write('#'*40 + '\n')
+        data.to_csv(f, sep=' ', header=None, index=False)
 
 
 class statvarFile(parseFilenames):
