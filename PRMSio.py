@@ -7,6 +7,7 @@ import os
 import numpy as np
 import pandas as pd
 import datetime as dt
+import calendar
 from collections import OrderedDict
 import fiona
 from shapely.geometry import shape, Point
@@ -38,12 +39,19 @@ class parseFilenames(object):
 
 class datafile:
 
-    def __init__(self, datafile):
+    def __init__(self, datafile, parse_timeper=None, parse_scenario=None, parse_gcm=None):
 
         self.f = datafile
-        self.timeper = os.path.split(self.f)[1].split('.')[3]
-        self.scenario = os.path.split(self.f)[1].split('.')[1]
-        self.gcm = os.path.split(self.f)[1].split('.')[0]
+        self.timeper = None #os.path.split(self.f)[1].split('.')[3]
+        self.scenario = None #os.path.split(self.f)[1].split('.')[1]
+        self.gcm = None #os.path.split(self.f)[1].split('.')[0]
+
+        for func, attr in {parse_timeper: 'timeper',
+                           parse_scenario: 'scenario',
+                           parse_gcm: 'gcm'}.items():
+            if func is not None:
+                self.__dict__[attr] = func(datafile)
+
         self.header = []
         self.Ncolumns = {}
         self.tmin = 0 # int, number of tmin columns
@@ -105,7 +113,7 @@ class netCDF4dataset:
     
     def __init__(self, x_col='x', y_col='y', time_col='time',
                  t0=0, time_units='d',
-                 proj4=None):
+                 proj4=None, output_proj4=None):
         """
         Attributes
         ----------
@@ -130,7 +138,7 @@ class netCDF4dataset:
         self.time_units = time_units
         self.t0 = pd.to_datetime(t0)
         self._toffset = self.t0 - pd.to_datetime(0)
-        
+
         # boolean arrays, of same length as x/y coordinates in dataset; 
         # True if coordinate within model bounding box
         self._yinds = np.array([])
@@ -140,11 +148,16 @@ class netCDF4dataset:
         
         self.X = np.array([])
         self.Y = np.array([])
+        self.outputX = np.array([])
+        self.outputY = np.array([])
             
         self.proj4 = proj4
+        self.output_proj4 = output_proj4
+        self.reproject_output(output_proj4=output_proj4)
         
-    def set_extent(self, ncfile, model_extent, model_extent_buffer=1000):
-        
+    def set_extent(self, ncfile, model_extent, model_extent_buffer=1000, reduce=1):
+
+        print 'setting extent to {}\n\tusing points in {}...'.format(model_extent, ncfile)
         f = netCDF4.Dataset(ncfile)
         
         # read geometry of model extent; project to coordinate system of netCDF data
@@ -153,64 +166,149 @@ class netCDF4dataset:
         model_extent = project(model_extent, model_proj4, self.proj4)
         model_extent_buff = model_extent.buffer(model_extent_buffer)
 
+        # get x and y locations
         X, Y = f.variables[self.x_col], f.variables[self.y_col]
-        xinds = (X[:] > model_extent_buff.bounds[0]) & (X[:] < model_extent_buff.bounds[2])
-        yinds = (Y[:] > model_extent_buff.bounds[1]) & (Y[:] < model_extent_buff.bounds[3])
+
+        # build a mask for data; exclude points outside the model bounding box
+        xreduce = np.array([False] * len(X))
+        yreduce = np.array([False] * len(Y))
+        xreduce[::reduce] = True
+        yreduce[::reduce] = True
+
+        xinds = (X[:] > model_extent_buff.bounds[0]) & (X[:] < model_extent_buff.bounds[2]) & xreduce
+        yinds = (Y[:] > model_extent_buff.bounds[1]) & (Y[:] < model_extent_buff.bounds[3]) & yreduce
+
+        # get a variable in the file being used to set the extent
+        # (must have t, x, y dimensions)
+        varname = [k for k, v in f.variables.items() if len(v.shape) == 3][0]
+        var = f.variables[varname]
+        var_rs = np.reshape(var[0, yinds, xinds], (len(X[xinds]) * len(Y[yinds])))
 
         bbox_points_xy = np.reshape(np.meshgrid(X[xinds], Y[yinds]), (2, len(X[xinds]) * len(Y[yinds])))
         bbox_points = [Point(bbox_points_xy[0, i], bbox_points_xy[1, i]) for i in range(np.shape(bbox_points_xy)[1])]
-        within = np.array([p.within(model_extent) for p in bbox_points])
+
+        # create boolean index of whether points are in model extent and not masked in dayment
+        within = np.array([p.within(model_extent)
+                           if not var_rs.mask[i]
+                           else False for i, p in enumerate(bbox_points)])
+
 
         self._xinds = xinds # indices of points within model bounding box
         self._yinds = yinds
-        self._within = within # boolean array indicating points within model extent
         self._allX = X # all x, y coordinates within netcdf dataset
         self._allY = Y
+        self._within = within # boolean array indicating points within model extent
         self.X = bbox_points_xy[0, within]
         self.Y = bbox_points_xy[1, within]
 
-    def get_data(self, ncfiles, var_col, dropna=True, 
-                 output_proj4=None, datetime_output=True):
-    
+    def get_data(self, ncfiles, var_col,
+                 output_proj4=None, datetime_output=True, fill_leap_years=True):
+
+        self.datetime_output = datetime_output
+        self.fill_leap_years = fill_leap_years
+
         if not isinstance(ncfiles, list):
             ncfiles = [ncfiles]
-        
-        if output_proj4 is not None:
-            print 'reprojecting output coordinates to:\n{}\n'.format(output_proj4)
-            pr1 = pyproj.Proj(self.proj4)
-            pr2 = pyproj.Proj(output_proj4)
-            X, Y = pyproj.transform(pr1, pr2, self.X, self.Y)
-        else:
-            X, Y = self.X, self.Y
+
+        self.reproject_output(output_proj4=output_proj4)
+
         df = pd.DataFrame(columns=['point', self.x_col, self.y_col, var_col, self.time_col])
         for ncfile in ncfiles:
             print('\r{}'.format(ncfile)),
             f = netCDF4.Dataset(ncfile)
             var = f.variables[var_col]
             for i in range(var.shape[0]):
-                # reshape variable values to 1-D array; cull to extent bbox
-                var_rs = np.reshape(var[i, self._yinds, self._xinds], 
-                                    (len(self._allX[self._xinds]) * len(self._allY[self._yinds])))
-                # cull to actual extent
-                var_rs = var_rs[self._within]
-                time = f.variables[self.time_col][i]
-                dft = pd.DataFrame({self.x_col: X,
-                                    self.y_col: Y,
-                                    self.time_col: time,
-                                    var_col: var_rs})
-                if datetime_output:
-                    dft['time'] = pd.to_datetime(dft.time.values, unit=self.time_units) + self._toffset
-                if dropna:
-                    dft.dropna(axis=0, inplace=True)
-                dft['point'] = range(len(dft))
-                dft.index = pd.MultiIndex.from_product([np.unique(dft.time.values), dft.point.values])
 
+                time = f.variables[self.time_col][i]
+                datetime = pd.to_datetime(time, unit=self.time_units) + self._toffset
+
+                # reshape variable values to 1-D array; cull to extent bbox
+                var_rs = self._get_values(var, i)
+
+                # make dataframe of values for the current timestamp
+                dft = self._build_timestamp_dataframe(var_rs, var_col, time)
                 df = df.append(dft)
-        print('\n')
+
+                # check if current timestamp is 12/30 on a leap year
+                if self.fill_leap_years and self.datetime_output \
+                                and calendar.isleap(datetime.year) \
+                                and datetime.month == 12 \
+                                and datetime.day == 30:
+
+                    # make another dataframe for 12/31, which is missing
+                    # for now, simply copy 12/30 (for daymet, 1/1 is in another file)
+                    dft = self._build_timestamp_dataframe(var_rs, var_col, time+1)
+                    df = df.append(dft)
+        self.df = df
+        if self.fill_leap_years:
+            df = self._compute_leapyear_lastdays(df, var_col)
         return df
+
+    def _build_timestamp_dataframe(self, var_rs, var_col, time):
+
+        dft = pd.DataFrame({self.x_col: self.outputX,
+                            self.y_col: self.outputY,
+                            self.time_col: time,
+                            var_col: var_rs})
+
+        if self.datetime_output:
+            dft['time'] = pd.to_datetime(dft.time.values, unit=self.time_units) + self._toffset
+        dft['point'] = range(len(dft))
+        dft.index = pd.MultiIndex.from_product([np.unique(dft.time.values), dft.point.values])
+
+        return dft
+
+    def _get_values(self, var, i):
+
+        # reshape variable values to 1-D array; cull to extent bbox
+        var_rs = np.reshape(var[i, self._yinds, self._xinds],
+                            (len(self._allX[self._xinds]) * len(self._allY[self._yinds])))
+        # cull to actual extent (this excludes masked points in daymet; see set_extent()
+        return var_rs[self._within].copy()
+
+    def _compute_leapyear_lastdays(self, df, var_col):
+
+        # get leap years in dataframe, as long as they are followed by a Jan 1
+        # those that are the last year will be left as-is (filled by copying Dec 30)
+        leap_years = np.array([y for y in df.time.dt.year.unique() if calendar.isleap(y) and
+                                          y + 1 in list(df.time.dt.year.unique())])
+        next_years = leap_years + 1 # for Jan 1
+
+        leap_year_inds = (df.time.dt.month == 12) & (df.time.dt.year.isin(list(leap_years)))
+        next_year_inds = (df.time.dt.month == 1) & (df.time.dt.year.isin(list(next_years)))
+
+        # for all leap years in dataframe, average 12/30 and 1/1
+        df.loc[(df.time.dt.day == 31) & leap_year_inds, var_col] = \
+            (df.ix[(df.time.dt.day == 30) & leap_year_inds, var_col].values +
+             df.ix[(df.time.dt.day == 1) & next_year_inds, var_col].values) / 2.0
+        return df
+
+    def print_stations(self, out_csv='stations.csv',
+                       **kwargs):
+
+        df = pd.DataFrame({'station': np.arange(len(self.outputX)) + 1,
+                           self.x_col: self.outputX,
+                           self.y_col: self.outputY})
+        print 'writing station coordinates to {}'.format(out_csv)
+        df.to_csv(out_csv, index=False, **kwargs)
+
+    def reproject_output(self, output_proj4=None):
+
+        self.output_proj4 = output_proj4
+        if len(self.outputX) == 0 and output_proj4 is not None:
+            print 'reprojecting output coordinates to:\n{}\n'.format(output_proj4)
+            pr1 = pyproj.Proj(self.proj4)
+            pr2 = pyproj.Proj(self.output_proj4)
+            self.outputX, self.outputY = pyproj.transform(pr1, pr2, self.X, self.Y)
+        elif output_proj4 is None:
+            self.outputX, self.outputY = self.X, self.Y
+        else:
+            pass
+
 
     def write_to_dotData(self, df, outfile='climate.data'):
 
+        print 'writing {}'.format(outfile)
         df['point2'] = df.point + df.point.max() + 1
         df['point3'] = df.point + df.point2.max() + 1
 
@@ -223,7 +321,8 @@ class netCDF4dataset:
         prms_date(data)
 
         f = open(outfile, 'w')
-        f.write('tmin {0:.0f}\ntmax {0:.0f}\nprcp {0:.0f}\n'.format(len(df)))
+        npoints = len(np.unique(df.point))
+        f.write('tmin {0:.0f}\ntmax {0:.0f}\nprcp {0:.0f}\n'.format(npoints))
         f.write('#'*40 + '\n')
         data.to_csv(f, sep=' ', header=None, index=False)
 

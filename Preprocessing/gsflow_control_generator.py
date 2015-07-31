@@ -82,7 +82,9 @@ for b in basenames:
                 ofp.write(os.path.join(outputdir, b + '.statvar.dat\n'))
             elif preproc and "param_file" in controldata[i-4]:
                 ofp.write(os.path.join(paramsdir, b + '_preprocess.params\n'))
-
+            elif 'ani_output_file' in controldata[i-3]:
+                ofp.write(os.path.join(outputdir, b + '.ani.dat\n'))
+                
             # these '_day' entries are only needed if using climate_hru module
             elif climate_method == 'climate_hru' and 'tmax_day' in controldata[i-3]:
                 ofp.write(os.path.join(datadir, b + '_tmax.day\n'))
