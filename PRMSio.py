@@ -343,8 +343,9 @@ class statvarFile(parseFilenames):
         parse = lambda x: dt.datetime.strptime(x, '%Y %m %d %H %M %S')
 
         # read file into pandas dataframe (index_col is kludgy but works)
-        df = pd.read_csv(self.f, delim_whitespace=True, header=None, skiprows=45, parse_dates=[[1, 2, 3, 4, 5, 6]],
+        df = pd.read_csv(self.f, delim_whitespace=True, header=None, skiprows=self.nstats + 1, parse_dates=[[1, 2, 3, 4, 5, 6]],
                          date_parser=parse, index_col=0)
+        df.index.name = 'Datetime'
 
          # name the columns using the list of variables in the file header
         df.columns = self.statnames
