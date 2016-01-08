@@ -7,7 +7,7 @@ import climate_plots as cp
 
 # input
 results_path = '/Users/aleaf/Documents/BlackEarth/run3'
-modes = ['uzf'] #['statvar', 'csv', 'ggo', 'ssf', 'uzf']
+modes = ['ggo_cfs', 'csv', 'statvar', 'ssf'] #['statvar', 'csv', 'ggo', 'ssf', 'uzf']
 var_name_file = 'BEC.var_name' # descriptions of GSFLOW variables
 
 # create a variables table by running GSFLOW_utils.make_var_table()
@@ -83,10 +83,6 @@ for mode in modes:
 
     # For each variable (or model output observation), make the plots
     for var in Figs.varlist:
-
-        if not var == 'RECHARGE_in':
-            continue
-
 
         print '\n{}'.format(var)
 

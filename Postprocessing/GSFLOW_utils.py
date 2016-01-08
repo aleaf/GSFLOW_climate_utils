@@ -62,7 +62,7 @@ def getvars(results_folder,mode):
         else:
             varlist=list(set([f.split('.')[0] for f in fileslist]))
             
-    elif mode=='ggo':
+    elif mode=='ggo' or 'ggo_csv':
         if fromZip:
             varlist=[f[:-4] for f in fileslist if f.endswith(mode)]
         else:
@@ -885,6 +885,19 @@ def set_plot_titles(var, mode, stat, var_info, aggregated_results_folder, plotty
         else:
             title = var
             units = 'cubic feet per day'
+            var = 'baseflow'
+
+        ydescrip, calc = description(var, stat, plottype, var_info, quantile)
+
+    elif mode == 'ggo_cfs':
+        if 'uzfgage' in fname:
+            title = var
+            units = 'feet'
+            var = 'head'
+
+        else:
+            title = var
+            units = 'cubic feet per second'
             var = 'baseflow'
 
         ydescrip, calc = description(var, stat, plottype, var_info, quantile)

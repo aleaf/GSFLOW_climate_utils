@@ -67,5 +67,19 @@ def test_statistics():
     assert boxcolumns[0].mean() == np.arange(366, 366+365).mean()
     assert boxcolumns[1].mean() == np.arange(366+365, 366+731).mean() # 2016 is a leap year!
 
+    ## test annual sums timeseries
+    dfs = cs.annual_timeseries(csvs, ['0', '1', '2'], 1, 'mean_annual', calc='sum')
+
+    # test annual boxcolumns
+    assert dfs['1'].ix['2015-01-01', '1'] == np.arange(366, 366+365).sum()
+    assert dfs['2'].ix['2016-01-01', '2'] == (np.arange(366+365, 366+731) + 1).sum() # 2016 is a leap year!
+
+    ## test annual means timeseries
+    dfs = cs.annual_timeseries(csvs, ['0', '1', '2'], 1, 'mean_annual', calc='mean')
+
+    # test annual boxcolumns
+    assert dfs['1'].ix['2015-01-01', '1'] == np.arange(366, 366+365).mean()
+    assert dfs['2'].ix['2016-01-01', '2'] == (np.arange(366+365, 366+731) + 1).mean() # 2016 is a leap year!
+
 if __name__ == '__main__':
     test_statistics()
