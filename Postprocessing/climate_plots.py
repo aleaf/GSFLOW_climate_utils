@@ -8,10 +8,14 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 import matplotlib.patheffects as PathEffects
-import seaborn as sb
+#import seaborn as sb
 import textwrap
 import climate_stats as cs
 import GSFLOW_utils as GSFu
+from Figures import ReportFigures
+
+rf = ReportFigures()
+rf.set_style()
 
 
 #--modify the base rcParams for a few items
@@ -113,7 +117,7 @@ class ReportFigures():
         self.legend_fontsize = self.legend_titlesize - 1
 
         # default plot settings
-        self.plotstyle = {'font.family': 'Univers 57 Condensed',
+        self.plotstyle = {'font.family': 'Univers-Condensed',
                           'axes.linewidth': 0.5,
                           'axes.labelsize': 8,
                           'axes.titlesize': 9,
@@ -203,12 +207,12 @@ class ReportFigures():
 
             # settings to customize Seaborn "ticks" style (i.e. turn off grid)
             rcparams = {'figure.figsize': (self.doublecolumn_width, self.doublecolumn_width * self.tall_aspect),
-                        'lines.linewidth': 1.0}
+                        'lines.linewidth': 0.5}
 
-            fig, ax = sb_box_monthly(boxcolumns, baseline, self.compare_periods, ylabel,
+            fig, ax = box_monthly(boxcolumns, baseline, self.compare_periods, ylabel,
                                      color=self.box_colors, plotstyle=self.plotstyle,
                                      rcparams=rcparams,
-                                     fliersize=3, linewidth=self.plotstyle['axes.linewidth'])
+                                     fliersize=3, linewidth=0.5)
             self.figure_title(ax, title, wrap=self.doublecolumn_title_wrap)
 
         else:
@@ -216,10 +220,10 @@ class ReportFigures():
             rcparams = {'figure.figsize': (self.singlecolumn_width, self.singlecolumn_width * self.tall_aspect),
                         'lines.linewidth': 0.5}
 
-            fig, ax = sb_box_annual(boxcolumns, baseline, self.compare_periods, ylabel,
+            fig, ax = box_annual(boxcolumns, baseline, self.compare_periods, ylabel,
                                     color=self.box_colors, plotstyle=self.plotstyle,
                                     rcparams=rcparams,
-                                    fliersize=plt.rcParams['figure.figsize'][0] * 1.5, linewidth=self.plotstyle['axes.linewidth'])
+                                    fliersize=plt.rcParams['figure.figsize'][0] * 1.5, linewidth=0.5)
 
             self.figure_title(ax, title, wrap=self.singlecolumn_title_wrap)
 
@@ -618,11 +622,11 @@ def timeseries(dfs, ylabel='', props=None, Synthetic_timepers=[],
                      'axes.grid': False,
                      'grid.linewidth': 0}
 
-    sb.set() # reset default parameters first
-    sb.set_style("ticks", plotstyle)
+    #sb.set() # reset default parameters first
+    #sb.set_style("ticks", plotstyle)
 
     # update the axes_style for seaborn with specified params
-    sb.set_style("ticks", sb.axes_style(rc=rcparams)) # apply additional custom styles for this plot
+    #sb.set_style("ticks", sb.axes_style(rc=rcparams)) # apply additional custom styles for this plot
 
     # update rcparams (because some style adjustments aren't handled by seaborn!)
     plt.rcParams.update(plotstyle)
@@ -694,12 +698,12 @@ def timeseries(dfs, ylabel='', props=None, Synthetic_timepers=[],
 
 def sb_violin_annual(boxcolumns, baseline, compare_periods, ylabel, xlabel='', title='', color=['SteelBlue', 'Khaki'],
                      plotstyle={}, rcparams={}, ymin0=True):
-
-    sb.set() # reset default parameters first
-    sb.set_style("whitegrid", plotstyle)
+    '''
+    #sb.set() # reset default parameters first
+    #sb.set_style("whitegrid", plotstyle)
 
     # update the axes_style for seaborn with specified params
-    sb.set_style("whitegrid", sb.axes_style(rc=rcparams)) # apply additional custom styles for this plot
+    #sb.set_style("whitegrid", sb.axes_style(rc=rcparams)) # apply additional custom styles for this plot
 
     # update rcparams (because some style adjustments aren't handled by seaborn!)
     plt.rcParams.update(plotstyle)
@@ -712,6 +716,7 @@ def sb_violin_annual(boxcolumns, baseline, compare_periods, ylabel, xlabel='', t
     dates = ['-'.join(map(str, per)) for per in compare_periods]
 
     fig = plt.figure()
+
     try:
         ax = sb.violinplot(boxcolumns, names=dates, color=color, inner_kws=inner_kws,
                            linewidth=plt.rcParams['axes.linewidth'])
@@ -736,16 +741,17 @@ def sb_violin_annual(boxcolumns, baseline, compare_periods, ylabel, xlabel='', t
 
     plt.tight_layout()
     return fig, ax
-
+    '''
+    pass
 
 def sb_box_annual(boxcolumns, baseline, compare_periods, ylabel, xlabel='', title='', color=['SteelBlue', 'Khaki'],
                   plotstyle={}, rcparams={}, ax=None, **kwargs):
 
-    sb.set() # reset default parameters first
-    sb.set_style("whitegrid", plotstyle)
+    #sb.set() # reset default parameters first
+    #sb.set_style("whitegrid", plotstyle)
 
     # update the axes_style for seaborn with specified params
-    sb.set_style("whitegrid", sb.axes_style(rc=rcparams)) # apply additional custom styles for this plot
+    #sb.set_style("whitegrid", sb.axes_style(rc=rcparams)) # apply additional custom styles for this plot
 
     # update rcparams (because some style adjustments aren't handled by seaborn!)
     plt.rcParams.update(plotstyle)
@@ -771,7 +777,6 @@ def sb_box_annual(boxcolumns, baseline, compare_periods, ylabel, xlabel='', titl
     plt.tight_layout()
     return fig, ax
 
-
 def sb_box_monthly(boxcolumns, baseline, compare_periods, ylabel, xlabel='', title='', color=['SteelBlue', 'Khaki'],
                    xtick_freq=1,
                    plotstyle={}, rcparams={}, **kwargs):
@@ -779,11 +784,11 @@ def sb_box_monthly(boxcolumns, baseline, compare_periods, ylabel, xlabel='', tit
     different method than annual because the boxes are grouped by month, with one tick per month
     '''
 
-    sb.set() # reset default parameters first
-    sb.set_style("whitegrid", plotstyle)
+    #sb.set() # reset default parameters first
+    #sb.set_style("whitegrid", plotstyle)
 
     # update the axes_style for seaborn with specified params
-    sb.set_style("whitegrid", sb.axes_style(rc=rcparams)) # apply additional custom styles for this plot
+    #sb.set_style("whitegrid", sb.axes_style(rc=rcparams)) # apply additional custom styles for this plot
 
     # update rcparams (because some style adjustments aren't handled by seaborn!)
     plt.rcParams.update(plotstyle)
@@ -801,9 +806,10 @@ def sb_box_monthly(boxcolumns, baseline, compare_periods, ylabel, xlabel='', tit
             position = 0.5 + m + spacing + (boxwidth * (d+0.5))
             positions.append(position)
 
+    #kwargs.update({'positions': positions})
     # make the box plot
     fig = plt.figure()
-    ax = sb.boxplot(boxcolumns, positions=positions, widths=boxwidth, color=color, **kwargs)
+    ax = sb.boxplot(boxcolumns, width=boxwidth, palette=color, **kwargs) #positions=positions,
 
     xmin, xmax = ax.get_xlim()
     l = xmax - xmin
@@ -828,6 +834,106 @@ def sb_box_monthly(boxcolumns, baseline, compare_periods, ylabel, xlabel='', tit
     for tick in ax.get_xticks():
         month = ReportFigures.month[tick]
         months.append(month)
+
+    ax.set_xticklabels(months)
+
+    # make title
+    make_title(ax, title)
+
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel(xlabel)
+
+
+    plt.tight_layout()
+    return fig, ax
+
+def box_annual(boxcolumns, baseline, compare_periods, ylabel, xlabel='', title='', colors=['SteelBlue', 'Khaki'],
+                  plotstyle={}, rcparams={}, **kwargs):
+
+    # update rcparams (because some style adjustments aren't handled by seaborn!)
+    plt.rcParams.update(plotstyle)
+    plt.rcParams.update(rcparams)
+
+    dates = ['-'.join(map(str, per)) for per in compare_periods]
+
+    fig, ax = plt.subplots()
+
+    box = ax.boxplot(boxcolumns, widths=0.6, labels=dates, patch_artist=True,
+                    whiskerprops={'ls':'-', 'c': 'k', 'lw': 0.5},
+                    medianprops={'color':'k', 'zorder': 11},
+                    flierprops={'marker': 'D', 'mfc': 'k', 'ms': 4}
+                    )
+
+    for patch, color in zip(box['boxes'], colors):
+        patch.set_linewidth(0.5)
+        patch.set_facecolor(color)
+        patch.set_zorder(10)
+
+    ax.axhline(y=baseline[0], xmin=0.05, xmax=0.95, color='r', linewidth=1.0, zorder=12)
+
+    # make title
+    make_title(ax, title)
+
+    #thousands_sep(ax)
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel(xlabel)
+    #ax.set_ylim(0, ax.get_ylim()[1])
+
+    plt.tight_layout()
+    return fig, ax
+
+def box_monthly(boxcolumns, baseline, compare_periods, ylabel, xlabel='', title='', colors=['SteelBlue', 'Khaki'] * 12,
+                xtick_freq=1,
+                plotstyle={}, rcparams={}, **kwargs):
+
+    # update rcparams (because some style adjustments aren't handled by seaborn!)
+    plt.rcParams.update(plotstyle)
+    plt.rcParams.update(rcparams)
+
+    dates = ['-'.join(map(str, per)) for per in compare_periods]
+
+    # set box widths and positions so that they are grouped by month
+    n_periods = len(dates)
+    spacing = 0.1 # space between months
+    boxwidth = (1 - 2 * spacing)/n_periods
+    positions = []
+    for m in range(12):
+        for d in range(n_periods):
+            position = 0.5 + m + spacing + (boxwidth * (d+0.5))
+            positions.append(position)
+
+    fig, ax = plt.subplots()
+    ax.grid(True, which='major', axis='y', color='0.65',linestyle='-', zorder=-1)
+
+    box = ax.boxplot(boxcolumns.values, widths=boxwidth, positions=positions, patch_artist=True,
+                     whiskerprops={'ls':'-', 'c': 'k', 'lw': 0.5},
+                     medianprops={'color':'k', 'zorder': 11},
+                     flierprops={'marker': 'D', 'mfc': 'k', 'ms': 4}
+                     )
+
+    for patch, color in zip(box['boxes'], colors):
+        patch.set_facecolor(color)
+        patch.set_zorder(10)
+
+    # draw the baselines
+    xmin, xmax = ax.get_xlim()
+    l = xmax - xmin
+    positions_t = []
+    for i in range(len(positions)):
+        positions_t.append((((positions[i] - 0.5*boxwidth - xmin)/l), (positions[i] + 0.5*boxwidth - xmin)/l))
+
+    for i in range(len(baseline)):
+        ax.axhline(baseline[i], xmin=positions_t[i][0], xmax=positions_t[i][1],
+                   color='r', linewidth=plt.rcParams['axes.linewidth']*2, zorder=12)
+
+    frequency = xtick_freq # 1 for every month, 2 for every other, etc.
+    ticks = (np.arange(12) + 1)[frequency-1::frequency]
+    ax.set_xticks(ticks)
+    months = []
+    for tick in ax.get_xticks():
+        month = ReportFigures.month[tick]
+        months.append(month)
+    ax.set_xticklabels(months)
 
     ax.set_xticklabels(months)
 

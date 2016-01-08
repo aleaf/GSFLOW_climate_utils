@@ -7,7 +7,7 @@ import climate_plots as cp
 
 # input
 results_path = '/Users/aleaf/Documents/BlackEarth/run3'
-modes = ['csv'] #['statvar', 'csv', 'ggo', 'ssf', 'uzf']
+modes = ['uzf'] #['statvar', 'csv', 'ggo', 'ssf', 'uzf']
 var_name_file = 'BEC.var_name' # descriptions of GSFLOW variables
 
 # create a variables table by running GSFLOW_utils.make_var_table()
@@ -16,7 +16,7 @@ GSFLOW_variables_table = '/Users/aleaf/Documents/BlackEarth/run3/GSFLOW_variable
 
 
 # output
-output_folder = '/Users/aleaf/Documents/BlackEarth/run3/plots_run3_2'
+output_folder = '/Users/aleaf/Documents/BlackEarth/run3/plots_run3_3'
 
 
 # exclude any GSFLOW/PRMS variables in this list
@@ -83,10 +83,10 @@ for mode in modes:
 
     # For each variable (or model output observation), make the plots
     for var in Figs.varlist:
-        '''
-        if not var == 'fred_springs':
+
+        if not var == 'RECHARGE_in':
             continue
-        '''
+
 
         print '\n{}'.format(var)
 
@@ -111,8 +111,8 @@ for mode in modes:
                 print 'Time series ',
                 Figs.make_timeseries(csvs, var, stat)
 
-                print 'Violin ',
-                Figs.make_violin(csvs, var, stat)
+                #print 'Violin ',
+                #Figs.make_violin(csvs, var, stat)
 
                 print 'Box'
                 Figs.make_box(csvs, var, stat)
@@ -126,8 +126,8 @@ for mode in modes:
                         print 'Time series ',
                         Figs.make_timeseries(csvs, var, stat, quantile=quantile)
 
-                        print 'Violin ',
-                        Figs.make_violin(csvs, var, stat, quantile=quantile)
+                        #print 'Violin ',
+                        #Figs.make_violin(csvs, var, stat, quantile=quantile)
 
                         print 'Box'
                         Figs.make_box(csvs, var, stat, quantile=quantile)

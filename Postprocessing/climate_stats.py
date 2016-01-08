@@ -137,7 +137,9 @@ def period_stats(csvs, compare_periods, stat, baseline_period=np.array([]), calc
         tstart, tstop = np.datetime64('%s-01-01' %(per[0])), np.datetime64('%s-12-31' %(per[1]))
 
         if stat == 'mean_monthly': # returns 12 months (rows) x n GCM-scenarios (columns) DataFrame
-            dfg = df[tstart:tstop].groupby(lambda x: x.month).agg(calc) # aggregate data by group, using calc operation
+            #dfg = df[tstart:tstop].groupby(lambda x: x.month).agg(calc) # aggregate data by group, using calc operation
+            dfg = df[tstart:tstop].resample('M', how=calc) # dataframe of monthly values, using calc operation
+            dfg = dfg.groupby(dfg.index.month).agg('mean') # mean of monthly values for each month
 
             # give columns unique names based on month and time period
             columns = ['{} {}'.format(calendar.month_name[i], '-'.join(map(str, per))) for i in dfg.index]
@@ -189,8 +191,9 @@ def period_stats(csvs, compare_periods, stat, baseline_period=np.array([]), calc
         bstart, bstop = np.datetime64('%s-01-01' %(baseline_period[0])), np.datetime64('%s-12-31' %(baseline_period[1]))
 
         if stat == 'mean_monthly': # returns 12 (months) x 1 mean (of monthly means for all GCM-scenarios)
-            bl = df[bstart:bstop].groupby(lambda x: x.month).agg(calc)
-            bl = bl.mean(axis=1).get_values()
+            bl = df[bstart:bstop].resample('M', how=calc)
+            bl = bl.groupby(bl.index.month).agg('mean')
+            bl = bl.mean(axis=1).values
 
 
         elif stat == 'mean_annual': # calculates annual mean values for each GCM, the mean for all GCMs (1 value/yr)
