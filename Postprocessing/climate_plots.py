@@ -1,6 +1,5 @@
 __author__ = 'aleaf'
 
-import sys
 import os
 import numpy as np
 import pandas as pd
@@ -8,7 +7,6 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 import matplotlib.patheffects as PathEffects
-#import seaborn as sb
 import textwrap
 import climate_stats as cs
 import GSFLOW_utils as GSFu
@@ -17,7 +15,7 @@ from Figures import ReportFigures
 rf = ReportFigures()
 rf.set_style()
 
-
+'''
 #--modify the base rcParams for a few items
 newparams = {'font.family': 'Univers 57 Condensed Light',
              'legend.fontsize': 8,
@@ -30,7 +28,7 @@ newparams = {'font.family': 'Univers 57 Condensed Light',
 
 # Update the global rcParams dictionary with the new parameter choices
 plt.rcParams.update(newparams)
-
+'''
 '''
 # set/modify global Seaborn defaults
 # update any overlapping parameters in the seaborn 'paper' style with the custom values above
@@ -117,7 +115,7 @@ class ReportFigures():
         self.legend_fontsize = self.legend_titlesize - 1
 
         # default plot settings
-        self.plotstyle = {'font.family': 'Univers-Condensed',
+        self.plotstyle = {'font.family': 'Univers 57 Condensed',
                           'axes.linewidth': 0.5,
                           'axes.labelsize': 8,
                           'axes.titlesize': 9,
@@ -251,10 +249,10 @@ class ReportFigures():
 
         # make 'fill_between' timeseries plot with  mean and min/max for each year
         fig, ax = timeseries(dfs, ylabel=ylabel, props=self.timeseries_properties, Synthetic_timepers=self.synthetic_timepers,
-                             plotstyle=self.plotstyle, rcparams=rcparams)
+                             rcparams=rcparams)
 
         self.figure_title(ax, title, wrap=self.singlecolumn_title_wrap)
-        self.axes_numbering(ax)
+        #self.axes_numbering(ax)
 
         plt.tight_layout() # call this again so that title doesn't get cutoff
 
@@ -356,17 +354,18 @@ class ReportFigures():
         for d in range(len(self.dates)):
             handles.append(plt.Rectangle((0, 0), 1, 1, fc=self.box_colors[d]))
             labels.append(self.dates[d])
-        handles.append(plt.Line2D(range(10), range(10), color='r', linewidth=2))
+        handles.append(plt.Line2D(range(10), range(10), color='r', linewidth=0.5))
         labels.append('Baseline conditions ({}-{})'.format(self.baseline_period[0], self.baseline_period[1]))
-        handles.append(plt.Line2D(range(10), range(10), color='k', linewidth=1))
+        handles.append(plt.Line2D(range(10), range(10), color='k', linewidth=0.5))
         labels.append('Boxes represent quartiles;'.format(self.baseline_period[0], self.baseline_period[1]))
-        handles.append(plt.Line2D(range(10), range(10), color='k', linewidth=1))
+        handles.append(plt.Line2D(range(10), range(10), color='k', linewidth=0.5))
         labels.append('Whiskers represent 1.5x the interquartile range')
         handles.append(plt.scatter(1, 1, c='k', s=6, marker='D'))
         labels.append('Outliers')
 
         figlegend = plt.figure(figsize=(3, 2))
-        lg = figlegend.legend(handles, labels, title='EXPLANATION', loc='center')
+        lg = figlegend.legend(handles, labels, title='EXPLANATION', loc='center',
+                              borderpad=1)
 
         # update legend title size and font size to conform
         plt.setp(lg.get_title(), fontsize=self.legend_titlesize)
@@ -908,7 +907,7 @@ def box_monthly(boxcolumns, baseline, compare_periods, ylabel, xlabel='', title=
     box = ax.boxplot(boxcolumns.values, widths=boxwidth, positions=positions, patch_artist=True,
                      whiskerprops={'ls':'-', 'c': 'k', 'lw': 0.5},
                      medianprops={'color':'k', 'zorder': 11},
-                     flierprops={'marker': 'D', 'mfc': 'k', 'ms': 4}
+                     flierprops={'marker': 'D', 'mfc': 'k', 'ms': 2}
                      )
 
     for patch, color in zip(box['boxes'], colors):
@@ -924,7 +923,7 @@ def box_monthly(boxcolumns, baseline, compare_periods, ylabel, xlabel='', title=
 
     for i in range(len(baseline)):
         ax.axhline(baseline[i], xmin=positions_t[i][0], xmax=positions_t[i][1],
-                   color='r', linewidth=plt.rcParams['axes.linewidth']*2, zorder=12)
+                   color='r', linewidth=1, zorder=12)
 
     frequency = xtick_freq # 1 for every month, 2 for every other, etc.
     ticks = (np.arange(12) + 1)[frequency-1::frequency]
