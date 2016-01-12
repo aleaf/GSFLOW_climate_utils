@@ -25,10 +25,13 @@ props = {'sresa1b': {'color': 'Tomato', 'zorder': -2, 'alpha': 0.5},
 synthetic_timepers = [pd.date_range('{}-01-01'.format(2001), '{}-12-31'.format(2045)),
                       pd.date_range('{}-01-01'.format(2065), '{}-12-31'.format(2080))]
 
+baseline = pd.Panel(dfs).ix[:, '1995':'2000'].mean().mean().mean()
+print(baseline)
 
 fig, ax = cp.timeseries(dfs, ylabel='Growing season length (days)', props=props, title='',
                         Synthetic_timepers=synthetic_timepers,
-                        plotstyle=figures.plotstyle, baseline=100) # plotstyle dict as argument to override some Seaborn settings
+                        plotstyle=figures.plotstyle, baseline=baseline) # plotstyle dict as argument to override some Seaborn settings
 
+      
 
 fig.savefig(outpdf, dpi=300)
