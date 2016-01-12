@@ -889,7 +889,7 @@ def set_plot_titles(var, mode, stat, var_info, aggregated_results_folder, plotty
 
         ydescrip, calc = description(var, stat, plottype, var_info, quantile)
 
-    elif mode == 'ggo_cfs':
+    elif mode == 'ggo_cfs' or mode == 'ggo_diff':
         if 'uzfgage' in fname:
             title = var
             units = 'feet'

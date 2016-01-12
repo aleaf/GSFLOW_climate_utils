@@ -28,7 +28,7 @@ synthetic_timepers = [pd.date_range('{}-01-01'.format(2001), '{}-12-31'.format(2
 
 fig, ax = cp.timeseries(dfs, ylabel='Growing season length (days)', props=props, title='',
                         Synthetic_timepers=synthetic_timepers,
-                        plotstyle=figures.plotstyle) # plotstyle dict as argument to override some Seaborn settings
+                        plotstyle=figures.plotstyle, baseline=100) # plotstyle dict as argument to override some Seaborn settings
 
 
 fig.savefig(outpdf, dpi=300)

@@ -87,7 +87,8 @@ def annual_timeseries(csvs, gcms, spinup, stat, calc='mean', quantile=None):
     return dfs
 
 
-def period_stats(csvs, compare_periods, stat, baseline_period=np.array([]), calc='mean', quantile=None):
+def period_stats(csvs, compare_periods, stat, baseline_period=np.array([]),
+                 calc='mean', quantile=None, normalize_to_baseline=False):
     '''
     Aggregates data from dict of csv files (e.g. gcm-scenario combindations) for a model variable
         - groups data by month or by year and calculates period statistics
@@ -106,6 +107,7 @@ def period_stats(csvs, compare_periods, stat, baseline_period=np.array([]), calc
 
     quantile: float if stat = 'quantile', specify quantile to compute (e.g., for Q90 flow, enter 0.1)
 
+    normalize_to_baseline : report y-axis values relative to baseline period (as percentages)
     '''
     # Error in case no quantile value is given
     if stat == 'quantile' and not quantile:
@@ -213,6 +215,11 @@ def period_stats(csvs, compare_periods, stat, baseline_period=np.array([]), calc
         for b in range(len(bl)):
             for p in range(len(compare_periods)):
                 bl_columns = np.append(bl_columns, bl[b])
+
+        if normalize_to_baseline and stat == 'mean_annual' or normalize_to_baseline and stat == 'quantile':
+            df_all = np.array([d.values for d in df_all]).transpose()
+            df_all = 100 * df_all / bl_columns[0] - 100
+            bl_columns = [0, 0]
 
         return df_all, bl_columns
 

@@ -164,7 +164,7 @@ class ReportFigures():
         return outfile
 
 
-    def plot_info(self, var, stat, plottype, quantile=None):
+    def plot_info(self, var, stat, plottype, quantile=None, normalize_to_baseline=False):
         # Set plot titles and ylabels
         '''
         # set on the fly by reading the PRMS/GSFLOW variables file
@@ -187,16 +187,20 @@ class ReportFigures():
             title, xlabel, ylabel, calc = GSFu.set_plot_titles(var, self.mode, stat, self.var_info,
                                                          self.aggregated_results_folder,
                                                          plottype='box', quantile=quantile)
+
+        if normalize_to_baseline:
+            ylabel = 'Percent change relative to baseline period'
         return title, xlabel, ylabel, calc
 
 
-    def make_box(self, csvs, var, stat, quantile=None):
+    def make_box(self, csvs, var, stat, quantile=None, normalize_to_baseline=False):
 
-        title, xlabel, ylabel, calc = self.plot_info(var, stat, 'box', quantile=quantile)
+        title, xlabel, ylabel, calc = self.plot_info(var, stat, 'box', quantile=quantile,
+                                                     normalize_to_baseline=normalize_to_baseline)
 
         # calculate montly means for box plot
         boxcolumns, baseline = cs.period_stats(csvs, self.compare_periods, stat, self.baseline_period,
-                                               calc=calc, quantile=quantile)
+                                               calc=calc, quantile=quantile, normalize_to_baseline=normalize_to_baseline)
 
 
 
@@ -234,7 +238,7 @@ class ReportFigures():
         plt.close()
 
 
-    def make_timeseries(self, csvs, var, stat, quantile=None):
+    def make_timeseries(self, csvs, var, stat, quantile=None, baseline=False, baseline_text=False):
 
         # Set plot titles and ylabels
         title, xlabel, ylabel, calc = self.plot_info(var, stat, 'timeseries', quantile=quantile)
@@ -242,6 +246,11 @@ class ReportFigures():
         # calculate annual means
         dfs = cs.annual_timeseries(csvs, self.gcms, self.spinup, stat, calc=calc, quantile=quantile)
 
+        if baseline:
+            bl = pd.Panel(dfs).ix[:, str(self.baseline_period[0]):str(self.baseline_period[1])]\
+                .mean().mean().mean()
+        else:
+            bl = None
         # settings to customize Seaborn "ticks" style (i.e. turn off grid)
         rcparams = {'figure.figsize': (self.singlecolumn_width, self.singlecolumn_width * self.default_aspect),
                     'axes.grid': False,
@@ -249,7 +258,7 @@ class ReportFigures():
 
         # make 'fill_between' timeseries plot with  mean and min/max for each year
         fig, ax = timeseries(dfs, ylabel=ylabel, props=self.timeseries_properties, Synthetic_timepers=self.synthetic_timepers,
-                             rcparams=rcparams)
+                             rcparams=rcparams, baseline=bl)
 
         self.figure_title(ax, title, wrap=self.singlecolumn_title_wrap)
         #self.axes_numbering(ax)
@@ -376,7 +385,7 @@ class ReportFigures():
         plt.close('all')
 
 
-    def make_timeseries_legend(self):
+    def make_timeseries_legend(self, baseline=False):
 
         plt.close('all')
         plt.rcParams.update({'font.family': self.legend_font,
@@ -406,10 +415,19 @@ class ReportFigures():
                             alpha=self.timeseries_properties[scen[i]]['alpha'],
                             linewidth=0, zorder=0)
 
+            y = 0.5
+            if baseline:
+                y=0.67
+                # lines to represent means
+                l = grid[i].axhline(y=0.33, xmin=0, xmax=1, color='k', alpha=0.33,
+                                    lw=1, zorder=100)
+
             # lines to represent means
-            l = grid[i].axhline(y=0.5, xmin=0, xmax=1, color=self.timeseries_properties[scen[i]]['color'],
+            l = grid[i].axhline(y=y, xmin=0, xmax=1, color=self.timeseries_properties[scen[i]]['color'],
                                 linewidth=4, zorder=1)
             l.set_path_effects([PathEffects.withStroke(linewidth=4, foreground="k")])
+
+
 
             # remove the ticks and size the plots
             grid[i].set_xticks([])
@@ -432,10 +450,14 @@ class ReportFigures():
         # Labels for max/mean/min
         grid[i].text(1.2, 1, 'Maximum', ha='left', va='center',
                      transform=grid[i].transAxes, family=self.legend_font, fontsize=self.legend_fontsize)
-        grid[i].text(1.2, .5, 'Mean from General Circulation Models', ha='left', va='center',
+        grid[i].text(1.2, y, 'Mean from General Circulation Models', ha='left', va='center',
                      transform=grid[i].transAxes, family=self.legend_font, fontsize=self.legend_fontsize)
         grid[i].text(1.2, 0, 'Minimum', ha='left', va='center',
                      transform=grid[i].transAxes, family=self.legend_font, fontsize=self.legend_fontsize)
+        if baseline:
+            grid[i].text(1.2, 0.33, 'Mean for baseline period of {}-{}'.format(*list(self.baseline_period)),
+                         ha='left', va='center',
+                         transform=grid[i].transAxes, family=self.legend_font, fontsize=self.legend_fontsize)
 
         grid[2].text(0, 1.8, "EXPLANATION", ha='right', fontsize=self.legend_titlesize, family=self.legend_font)
         grid[0].text(0, 1.4, "Emissions Scenarios", ha='left', family=self.legend_font, fontsize=self.legend_fontsize)
@@ -603,7 +625,7 @@ def make_title(ax, title, zorder=1000):
 
 def timeseries(dfs, ylabel='', props=None, Synthetic_timepers=[],
                clip_outliers=True, xlabel='', title='',
-               plotstyle={}, rcparams={}):
+               plotstyle={}, rcparams={}, baseline=None, baseline_text=None):
     """
     Makes a timeseries plot from dataframe(s) containing multiple timeseries of the same phenomena
     (e.g. multiple GCM realizations of future climate
@@ -676,6 +698,15 @@ def timeseries(dfs, ylabel='', props=None, Synthetic_timepers=[],
                             facecolor=synthetic_timeper_color, edgecolor=synthetic_timeper_color, alpha=synthetic_timeper_alpha,
                             linewidth=0, zorder=0)
 
+    if baseline is not None:
+        ax.axhline(baseline, c='k', lw=0.5, alpha=0.33, zorder=10)
+        if baseline_text is not None:
+            ymin, ymax = ax.get_ylim()
+            y = (baseline - ymin) / (ymax - ymin)
+            ax.text(0.5, y, baseline_text,
+                    fontsize=6,
+                    ha='right', va='bottom',
+                    transform=ax.transAxes, zorder=10)
     # make title
     make_title(ax, title)
 

@@ -7,7 +7,7 @@ import climate_plots as cp
 
 # input
 results_path = '/Users/aleaf/Documents/BlackEarth/run3'
-modes = ['ggo_cfs', 'csv', 'statvar', 'ssf'] #['statvar', 'csv', 'ggo', 'ssf', 'uzf']
+modes = ['ggo_diff'] #'ggo_cfs', 'csv', 'statvar', 'ssf', 'uzf'] #['statvar', 'csv', 'ggo', 'ssf', 'uzf']
 var_name_file = 'BEC.var_name' # descriptions of GSFLOW variables
 
 # create a variables table by running GSFLOW_utils.make_var_table()
@@ -79,7 +79,7 @@ for mode in modes:
     # Make individual legends for each kind of plot
     Figs.make_box_legend()
     Figs.make_violin_legend()
-    Figs.make_timeseries_legend()
+    Figs.make_timeseries_legend(baseline=True)
 
     # For each variable (or model output observation), make the plots
     for var in Figs.varlist:
@@ -105,28 +105,28 @@ for mode in modes:
                 print 'Annual Flows: ',
 
                 print 'Time series ',
-                Figs.make_timeseries(csvs, var, stat)
+                Figs.make_timeseries(csvs, var, stat, baseline=True)
 
                 #print 'Violin ',
                 #Figs.make_violin(csvs, var, stat)
 
                 print 'Box'
-                Figs.make_box(csvs, var, stat)
+                Figs.make_box(csvs, var, stat, normalize_to_baseline=True)
 
             # Make plots of quantile flows for the gages
             else:
-                if mode == 'ggo':
+                if mode == 'ggo_cfs' or mode == 'ggo_diff':
                     for quantile in [0.1, 0.9]:
                         print 'Q{:.0f}0 Flows: '.format(10*(1-quantile)),
 
                         print 'Time series ',
-                        Figs.make_timeseries(csvs, var, stat, quantile=quantile)
+                        Figs.make_timeseries(csvs, var, stat, quantile=quantile, baseline=True)
 
                         #print 'Violin ',
                         #Figs.make_violin(csvs, var, stat, quantile=quantile)
 
                         print 'Box'
-                        Figs.make_box(csvs, var, stat, quantile=quantile)
+                        Figs.make_box(csvs, var, stat, quantile=quantile, normalize_to_baseline=True)
 
     if Figs.stat_summary:
         Figs.ofp.close()

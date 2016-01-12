@@ -81,5 +81,21 @@ def test_statistics():
     assert dfs['1'].ix['2015-01-01', '1'] == np.arange(366, 366+365).mean()
     assert dfs['2'].ix['2016-01-01', '2'] == (np.arange(366+365, 366+731) + 1).mean() # 2016 is a leap year!
 
+    ## test annual quantiles timeseries
+    dfs = cs.annual_timeseries(csvs, ['0', '1', '2'], 1, 'quantile', quantile=0.1)
+    assert dfs['1'].ix['2015-01-01', '1'] == np.percentile(np.arange(366, 366+365), 10)
+
+    ##test annual quantiles box plots
+    boxcolumns, baseline = cs.period_stats(csvs, compare_periods, 'quantile', baseline_period,
+                                           quantile=0.1)
+    assert boxcolumns[0].mean() - np.percentile(np.arange(366, 366+365), 10) < 1e-8
+
+
+    ## test normalize option
+    for calc in ['mean', 'sum']:
+        boxcolumns, baseline = cs.period_stats(csvs, compare_periods, 'mean_annual', baseline_period,
+                                                   calc=calc, quantile=None, normalize_to_baseline=True)
+        assert boxcolumns[2, 0] == 200.0
+
 if __name__ == '__main__':
     test_statistics()
