@@ -90,12 +90,42 @@ def test_statistics():
                                            quantile=0.1)
     assert boxcolumns[0].mean() - np.percentile(np.arange(366, 366+365), 10) < 1e-8
 
-
     ## test normalize option
     for calc in ['mean', 'sum']:
         boxcolumns, baseline = cs.period_stats(csvs, compare_periods, 'mean_annual', baseline_period,
                                                    calc=calc, quantile=None, normalize_to_baseline=True)
         assert boxcolumns[2, 0] == 200.0
+
+
+    # test code for time series means on real data
+    csvs={'sresa1b': 'Brew6_cfs.sresa1b.csv',
+          'sresa2': 'Brew6_cfs.sresa2.csv',
+          'sresb1': 'Brew6_cfs.sresb1.csv'}
+
+    gcms = ['cccma_cgcm3_1',
+              'cccma_cgcm3_1_t63',
+              'cnrm_cm3',
+              'csiro_mk3_0',
+              'csiro_mk3_5',
+              'gfdl_cm2_0',
+              'giss_aom',
+              'giss_model_e_r',
+              'iap_fgoals1_0_g',
+              'miroc3_2_hires',
+              'miub_echo_g',
+              'mpi_echam5',
+              'mri_cgcm2_3_2a']
+
+    dfs = cs.annual_timeseries(csvs, gcms, 20, 'mean_annual', calc='mean')
+
+    pn = pd.Panel(dfs)
+    df = pn.to_frame(filter_observations=False)
+    stacked = df.stack().reset_index()
+    stacked['year'] = [ts.year for ts in pd.to_datetime(stacked.major)]
+    dfm = df.groupby(level=0).mean()
+
+    assert (dfm['sresa1b'] - dfs['sresa1b'].mean(axis=1)).sum() < 1e-8
+
 
 if __name__ == '__main__':
     test_statistics()

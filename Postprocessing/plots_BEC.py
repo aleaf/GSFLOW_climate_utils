@@ -7,7 +7,7 @@ import climate_plots as cp
 
 # input
 results_path = '/Users/aleaf/Documents/BlackEarth/run3'
-modes = ['ggo_diff']#'ggo_cfs', 'csv', 'statvar', 'ssf', 'uzf'] #['statvar', 'csv', 'ggo', 'ssf', 'uzf']
+modes = ['ggo_diff', 'ggo_cfs', 'csv', 'statvar', 'ssf', 'uzf'] #['statvar', 'csv', 'ggo', 'ssf', 'uzf']
 var_name_file = 'BEC.var_name' # descriptions of GSFLOW variables
 
 # create a variables table by running GSFLOW_utils.make_var_table()
@@ -48,9 +48,9 @@ synthetic_timepers = [pd.date_range('{}-01-01'.format(2001), '{}-12-31'.format(2
 
 
 # use negative values for zorders so that shaded "fill-betweens" don't cover up tick marks
-timeseries_properties = {'sresa1b': {'color': 'Tomato', 'zorder': -2, 'alpha': 1, 'lw': 2}, # (146, 0, 0)
-                         'sresa2': {'color': 'SteelBlue', 'zorder': -3, 'alpha': 1, 'lw': 2}, #(0, 109, 219)
-                         'sresb1': {'color': 'Yellow', 'zorder': -1, 'alpha': 1, 'lw': 2},
+timeseries_properties = {'sresa1b': {'color': 'Tomato', 'zorder': -2, 'alpha': 1, 'lw': 1.5}, # (146, 0, 0)
+                         'sresa2': {'color': 'SteelBlue', 'zorder': -3, 'alpha': 1, 'lw': 1.5}, #(0, 109, 219)
+                         'sresb1': {'color': 'Yellow', 'zorder': -1, 'alpha': 1, 'lw': 1.5},
                          }
 
 # customize any default rc settings

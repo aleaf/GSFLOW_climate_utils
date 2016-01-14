@@ -291,6 +291,7 @@ class ReportFigures():
         # make 'fill_between' timeseries plot with  mean and min/max for each year
         fig, ax = timeseries_hexbin(dfs, ylabel=ylabel, props=self.timeseries_properties,
                                     Synthetic_timepers=self.synthetic_timepers,
+                                    rcparams=rcparams,
                                     baseline=bl)
 
         self.figure_title(ax, title, wrap=self.singlecolumn_title_wrap)
@@ -800,17 +801,21 @@ def timeseries_hexbin(dfs, ylabel='', props=None, Synthetic_timepers=[],
                  'sresa2': {'color': '0.25', 'zorder': -3, 'alpha': 1, 'linestyle': '-'},
                  'sresb1': {'color': '0.5', 'zorder': -2, 'alpha': 1, 'linestyle': '-'}}
 
+    # global settings
+    plt.rcParams.update(plotstyle)
+    plt.rcParams.update(rcparams)
+
     # initialize plot
     fig, ax = plt.subplots()
 
-    # global settings
     alpha = 0.5
     synthetic_timeper_color = '1.0'
     synthetic_timeper_alpha = 1 - (alpha * 0.4)
     # hexbin has int64 index
     Synthetic_timepers = [np.unique([dt.year for dt in per]) for per in Synthetic_timepers]
 
-    df = pd.Panel(dfs).to_frame()
+    pn = pd.Panel(dfs)
+    df = pn.to_frame(filter_observations=False) # default of true means gcms with any NaNs get dropped!
     stacked = df.stack().reset_index()
     stacked['year'] = [ts.year for ts in pd.to_datetime(stacked.major)]
     dfm = df.groupby(level=0).mean()
@@ -826,10 +831,12 @@ def timeseries_hexbin(dfs, ylabel='', props=None, Synthetic_timepers=[],
     cb = plt.colorbar(hb, label='Bin counts', pad=0.01)
 
     for scn, p in props.items():
+
+        lw = p.get('lw', 1)
         l = plt.plot(dfm.index.year, dfm[scn].tolist(),
                      zorder=p['zorder'], label=scn,
-                     lw=p.get('lw', 1), color=p['color'], ls=p.get('linestyle', '-'))
-        l[0].set_path_effects([PathEffects.withStroke(linewidth=3, foreground="k")])
+                     lw=lw, color=p['color'], ls=p.get('linestyle', '-'))
+        l[0].set_path_effects([PathEffects.withStroke(linewidth=lw * 1.5, foreground="k")])
     # shade periods for which synthetic data were generated
     if len(Synthetic_timepers) > 0:
         for per in Synthetic_timepers:
