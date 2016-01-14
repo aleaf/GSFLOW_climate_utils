@@ -7,7 +7,7 @@ import climate_plots as cp
 
 # input
 results_path = '/Users/aleaf/Documents/BlackEarth/run3'
-modes = ['ggo_diff'] #'ggo_cfs', 'csv', 'statvar', 'ssf', 'uzf'] #['statvar', 'csv', 'ggo', 'ssf', 'uzf']
+modes = ['ggo_diff']#'ggo_cfs', 'csv', 'statvar', 'ssf', 'uzf'] #['statvar', 'csv', 'ggo', 'ssf', 'uzf']
 var_name_file = 'BEC.var_name' # descriptions of GSFLOW variables
 
 # create a variables table by running GSFLOW_utils.make_var_table()
@@ -46,10 +46,11 @@ spinup = 20 # years to trim from start of model simulation, to discard data from
 synthetic_timepers = [pd.date_range('{}-01-01'.format(2001), '{}-12-31'.format(2045)),
                       pd.date_range('{}-01-01'.format(2065), '{}-12-31'.format(2080))]
 
+
 # use negative values for zorders so that shaded "fill-betweens" don't cover up tick marks
-timeseries_properties = {'sresa1b': {'color': 'Tomato', 'zorder': -2, 'alpha': 0.5},
-                         'sresa2': {'color': 'SteelBlue', 'zorder': -3, 'alpha': 0.5},
-                         'sresb1': {'color': 'Yellow', 'zorder': -1, 'alpha': 0.5},
+timeseries_properties = {'sresa1b': {'color': 'Tomato', 'zorder': -2, 'alpha': 1, 'lw': 2}, # (146, 0, 0)
+                         'sresa2': {'color': 'SteelBlue', 'zorder': -3, 'alpha': 1, 'lw': 2}, #(0, 109, 219)
+                         'sresb1': {'color': 'Yellow', 'zorder': -1, 'alpha': 1, 'lw': 2},
                          }
 
 # customize any default rc settings
@@ -79,7 +80,8 @@ for mode in modes:
     # Make individual legends for each kind of plot
     Figs.make_box_legend()
     Figs.make_violin_legend()
-    Figs.make_timeseries_legend(baseline=True)
+    #Figs.make_timeseries_legend(baseline=True)
+    Figs.make_timeseries_hexbin_legend()
 
     # For each variable (or model output observation), make the plots
     for var in Figs.varlist:
@@ -92,8 +94,8 @@ for mode in modes:
                      if f.split('.')[0] == var and scen in f])
 
         # Monthly Flows
-        print 'Box plot of monthly flows'
-        Figs.make_box(csvs, var, 'mean_monthly')
+        #print 'Box plot of monthly flows'
+        #Figs.make_box(csvs, var, 'mean_monthly')
 
         # Annual Flows
         for stat in ['mean_annual', 'quantile']:
@@ -105,12 +107,13 @@ for mode in modes:
                 print 'Annual Flows: ',
 
                 print 'Time series ',
-                Figs.make_timeseries(csvs, var, stat, baseline=True)
+                #Figs.make_timeseries(csvs, var, stat, baseline=True)
+                Figs.make_timeseries_hexbin(csvs, var, stat, baseline=True)
 
                 #print 'Violin ',
                 #Figs.make_violin(csvs, var, stat)
 
-                print 'Box'
+                #print 'Box'
                 Figs.make_box(csvs, var, stat, normalize_to_baseline=True)
 
             # Make plots of quantile flows for the gages
@@ -120,12 +123,13 @@ for mode in modes:
                         print 'Q{:.0f}0 Flows: '.format(10*(1-quantile)),
 
                         print 'Time series ',
-                        Figs.make_timeseries(csvs, var, stat, quantile=quantile, baseline=True)
+                        #Figs.make_timeseries(csvs, var, stat, quantile=quantile, baseline=True)
+                        Figs.make_timeseries_hexbin(csvs, var, stat, quantile=quantile, baseline=True)
 
                         #print 'Violin ',
                         #Figs.make_violin(csvs, var, stat, quantile=quantile)
 
-                        print 'Box'
+                        #print 'Box'
                         Figs.make_box(csvs, var, stat, quantile=quantile, normalize_to_baseline=True)
 
     if Figs.stat_summary:

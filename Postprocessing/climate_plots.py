@@ -7,6 +7,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 import matplotlib.patheffects as PathEffects
+from matplotlib.colors import LinearSegmentedColormap
 import textwrap
 import climate_stats as cs
 import GSFLOW_utils as GSFu
@@ -269,6 +270,37 @@ class ReportFigures():
         fig.savefig(outfile, dpi=300)
         plt.close()
 
+    def make_timeseries_hexbin(self, csvs, var, stat, quantile=None, baseline=False, baseline_text=False):
+
+        # Set plot titles and ylabels
+        title, xlabel, ylabel, calc = self.plot_info(var, stat, 'timeseries', quantile=quantile)
+
+        # calculate annual means
+        dfs = cs.annual_timeseries(csvs, self.gcms, self.spinup, stat, calc=calc, quantile=quantile)
+
+        if baseline:
+            bl = pd.Panel(dfs).ix[:, str(self.baseline_period[0]):str(self.baseline_period[1])]\
+                .mean().mean().mean()
+        else:
+            bl = None
+        # settings to customize Seaborn "ticks" style (i.e. turn off grid)
+        rcparams = {'figure.figsize': (self.singlecolumn_width, self.singlecolumn_width * self.default_aspect),
+                    'axes.grid': False,
+                    'grid.linestyle': ''}
+
+        # make 'fill_between' timeseries plot with  mean and min/max for each year
+        fig, ax = timeseries_hexbin(dfs, ylabel=ylabel, props=self.timeseries_properties,
+                                    Synthetic_timepers=self.synthetic_timepers,
+                                    baseline=bl)
+
+        self.figure_title(ax, title, wrap=self.singlecolumn_title_wrap)
+        #self.axes_numbering(ax)
+
+        plt.tight_layout() # call this again so that title doesn't get cutoff
+
+        outfile = self.name_output(var, stat, 'timeseries_hexbin', quantile)
+        fig.savefig(outfile, dpi=300)
+        plt.close()
 
     def make_violin(self, csvs, var, stat, quantile=None):
 
@@ -384,6 +416,32 @@ class ReportFigures():
         figlegend.savefig(outfile, dpi=300)
         plt.close('all')
 
+    def make_timeseries_hexbin_legend(self):
+
+        fig = plt.figure()
+
+        plt.rcParams.update({'font.family': self.legend_font,
+                             'legend.fontsize': self.legend_fontsize})
+
+        handles=[]
+        labels=[]
+        for scn in ['sresa1b', 'sresa2', 'sresb1']:
+            handles.append(plt.Line2D(range(10), range(10),
+                                      color=self.timeseries_properties[scn]['color'],
+                                      linewidth=self.timeseries_properties[scn]['lw']))
+            labels.append(scn)
+            handles[-1].set_path_effects([PathEffects.withStroke(linewidth=3, foreground="k")])
+        figlegend = plt.figure(figsize=(3, 2))
+        lg = figlegend.legend(handles, labels, title='EXPLANATION', loc='center',
+                              borderpad=1)
+
+        # update legend title size and font size to conform
+        plt.setp(lg.get_title(), fontsize=self.legend_titlesize)
+
+
+        outfile = os.path.join(self.output_base_folder, 'ts_hexbin_legend.pdf')
+        figlegend.savefig(outfile, dpi=300)
+        plt.close('all')
 
     def make_timeseries_legend(self, baseline=False):
 
@@ -724,6 +782,86 @@ def timeseries(dfs, ylabel='', props=None, Synthetic_timepers=[],
 
     return fig, ax
 
+def timeseries_hexbin(dfs, ylabel='', props=None, Synthetic_timepers=[],
+               clip_outliers=True, xlabel='', title='',
+               plotstyle={}, rcparams={}, baseline=None, baseline_text=None,
+               **kwargs):
+    """
+    Makes a timeseries plot from dataframe(s) containing multiple timeseries of the same phenomena
+    (e.g. multiple GCM realizations of future climate
+    Plots the mean of all columns, enveloped by the min, max values of each row (as a fill-between plot)
+    dfs : dict of dataframes to plot
+    One dataframe per climate scenario; dataframes should have datetime indices
+
+    """
+
+    if not props:
+        props = {'sresa1b': {'color': '0.0', 'zorder': -1, 'alpha': 1, 'linestyle': '-'},
+                 'sresa2': {'color': '0.25', 'zorder': -3, 'alpha': 1, 'linestyle': '-'},
+                 'sresb1': {'color': '0.5', 'zorder': -2, 'alpha': 1, 'linestyle': '-'}}
+
+    # initialize plot
+    fig, ax = plt.subplots()
+
+    # global settings
+    alpha = 0.5
+    synthetic_timeper_color = '1.0'
+    synthetic_timeper_alpha = 1 - (alpha * 0.4)
+    # hexbin has int64 index
+    Synthetic_timepers = [np.unique([dt.year for dt in per]) for per in Synthetic_timepers]
+
+    df = pd.Panel(dfs).to_frame()
+    stacked = df.stack().reset_index()
+    stacked['year'] = [ts.year for ts in pd.to_datetime(stacked.major)]
+    dfm = df.groupby(level=0).mean()
+    nyears = len(stacked.year.unique())
+
+    g = LinearSegmentedColormap.from_list('moregray', ((0.9, 0.9, 0.9), (0,0,0)), N=1000, gamma=1.0)
+
+    default_kwargs = {'gridsize': (nyears, 40), 'cmap': g, 'mincnt': 1, 'zorder': -10}
+    default_kwargs.update(kwargs)
+
+    ax = stacked.plot(ax=ax, kind='hexbin', x='year', y=0, colorbar=False, **default_kwargs)
+    hb = ax.get_children()[0] # assuming the polycollection will always be at 0
+    cb = plt.colorbar(hb, label='Bin counts', pad=0.01)
+
+    for scn, p in props.items():
+        l = plt.plot(dfm.index.year, dfm[scn].tolist(),
+                     zorder=p['zorder'], label=scn,
+                     lw=p.get('lw', 1), color=p['color'], ls=p.get('linestyle', '-'))
+        l[0].set_path_effects([PathEffects.withStroke(linewidth=3, foreground="k")])
+    # shade periods for which synthetic data were generated
+    if len(Synthetic_timepers) > 0:
+        for per in Synthetic_timepers:
+            max, min = ax.get_ylim()
+            ax.fill_between(per, [min] * len(per), [max] * len(per),
+                            facecolor=synthetic_timeper_color, edgecolor=synthetic_timeper_color, alpha=synthetic_timeper_alpha,
+                            linewidth=0, zorder=0)
+
+    if baseline is not None:
+        ax.axhline(baseline, c='k', lw=0.5, alpha=0.5, zorder=20)
+        if baseline_text is not None:
+            ymin, ymax = ax.get_ylim()
+            y = (baseline - ymin) / (ymax - ymin)
+            ax.text(0.5, y, baseline_text,
+                    fontsize=6,
+                    ha='right', va='bottom',
+                    transform=ax.transAxes, zorder=10)
+    # make title
+    make_title(ax, title)
+
+    #thousands_sep(ax) # fix the scientific notation on the y axis
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel(xlabel)
+
+    # prevent the shaded time periods of no data from overlapping the neatline
+    # (spines is a dictionary)
+    for side in ax.spines.iterkeys():
+        ax.spines[side].set_zorder(200)
+
+    plt.tight_layout()
+
+    return fig, ax
 
 
 def sb_violin_annual(boxcolumns, baseline, compare_periods, ylabel, xlabel='', title='', color=['SteelBlue', 'Khaki'],
