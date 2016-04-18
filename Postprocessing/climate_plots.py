@@ -270,7 +270,8 @@ class ReportFigures():
         fig.savefig(outfile, dpi=300)
         plt.close()
 
-    def make_timeseries_hexbin(self, csvs, var, stat, quantile=None, baseline=False, baseline_text=False):
+    def make_timeseries_hexbin(self, csvs, var, stat, quantile=None, baseline=False, baseline_text=False,
+                               **kwargs):
 
         # Set plot titles and ylabels
         title, xlabel, ylabel, calc = self.plot_info(var, stat, 'timeseries', quantile=quantile)
@@ -825,15 +826,21 @@ def timeseries_hexbin(dfs, ylabel='', props=None, Synthetic_timepers=[],
 
     default_kwargs = {'gridsize': (nyears, 40), 'cmap': g, 'mincnt': 1, 'zorder': -10}
     default_kwargs.update(kwargs)
-
+    '''
     ax = stacked.plot(ax=ax, kind='hexbin', x='year', y=0, colorbar=False, **default_kwargs)
     hb = ax.get_children()[0] # assuming the polycollection will always be at 0
     cb = plt.colorbar(hb, label='Bin counts', pad=0.01)
+    to revert to hexbin, uncomment these lines, and comment the 4 lines below
+    '''
+    df = df.unstack(level=1)
+    df.columns = df.columns.droplevel()
+    df.index = df.index.year
+    ax = df.plot(ax=ax, color='k', alpha=0.1, lw=1, legend=False, zorder=-10)
 
     for scn, p in props.items():
 
         lw = p.get('lw', 1)
-        l = plt.plot(dfm.index.year, dfm[scn].tolist(),
+        l = ax.plot(dfm.index.year, dfm[scn].tolist(),
                      zorder=p['zorder'], label=scn,
                      lw=lw, color=p['color'], ls=p.get('linestyle', '-'))
         l[0].set_path_effects([PathEffects.withStroke(linewidth=lw * 1.5, foreground="k")])
@@ -1034,10 +1041,12 @@ def box_annual(boxcolumns, baseline, compare_periods, ylabel, xlabel='', title='
     fig, ax = plt.subplots()
 
     box = ax.boxplot(boxcolumns, widths=0.6, labels=dates, patch_artist=True,
-                    whiskerprops={'ls':'-', 'c': 'k', 'lw': 0.5},
-                    medianprops={'color':'k', 'zorder': 11},
-                    flierprops={'marker': 'D', 'mfc': 'k', 'ms': 4}
-                    )
+                    boxprops={'ec': 'k', 'lw': 0.5},
+                         whiskerprops={'ls':'-', 'c': 'k', 'lw': 0.5},
+                         capprops={'lw': 0.5},
+                         medianprops={'color':'k', 'zorder': 11},
+                         flierprops={'marker': 'D', 'markerfacecolor': 'k', 'markersize': 3}
+                         )
 
     for patch, color in zip(box['boxes'], colors):
         patch.set_linewidth(0.5)
@@ -1081,10 +1090,12 @@ def box_monthly(boxcolumns, baseline, compare_periods, ylabel, xlabel='', title=
     ax.grid(True, which='major', axis='y', color='0.65',linestyle='-', zorder=-1)
 
     box = ax.boxplot(boxcolumns.values, widths=boxwidth, positions=positions, patch_artist=True,
-                     whiskerprops={'ls':'-', 'c': 'k', 'lw': 0.5},
-                     medianprops={'color':'k', 'zorder': 11},
-                     flierprops={'marker': 'D', 'mfc': 'k', 'ms': 2}
-                     )
+                         boxprops={'ec': 'k', 'lw': 0.5},
+                         capprops={'lw': 0.5},
+                         whiskerprops={'ls':'-', 'c': 'k', 'lw': 0.5},
+                         medianprops={'color':'k', 'zorder': 11},
+                         flierprops={'marker': 'D', 'markerfacecolor': 'k', 'markersize': 2}
+                         )
 
     for patch, color in zip(box['boxes'], colors):
         patch.set_facecolor(color)

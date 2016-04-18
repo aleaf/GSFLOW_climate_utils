@@ -6,8 +6,9 @@ import pandas as pd
 import climate_plots as cp
 
 # input
-results_path = '/Users/aleaf/Documents/BlackEarth/run3'
-modes = ['ggo_diff', 'ggo_cfs', 'csv', 'statvar', 'ssf', 'uzf'] #['statvar', 'csv', 'ggo', 'ssf', 'uzf']
+results_path = '/Users/aleaf/Documents/BlackEarth/run3_basecase'
+#results_path = '/Users/aleaf/Documents/BlackEarth/run3_pref_flow'
+modes = ['statvar', 'ggo_cfs', 'ggo_diff', 'ssf', 'uzf', 'csv'] #['statvar', 'csv', 'ggo', 'ssf', 'uzf']
 var_name_file = 'BEC.var_name' # descriptions of GSFLOW variables
 
 # create a variables table by running GSFLOW_utils.make_var_table()
@@ -16,8 +17,8 @@ GSFLOW_variables_table = '/Users/aleaf/Documents/BlackEarth/run3/GSFLOW_variable
 
 
 # output
-output_folder = '/Users/aleaf/Documents/BlackEarth/run3/plots_run3_3'
-
+output_folder = '/Users/aleaf/Documents/BlackEarth/run3_basecase/plots'
+#output_folder = '/Users/aleaf/Documents/BlackEarth/run3_pref_flow/plots'
 
 # exclude any GSFLOW/PRMS variables in this list
 exclude = ['basinnetgwwel', 'obs_strmflow', 'kkiter', 'basin_horad']
@@ -95,7 +96,7 @@ for mode in modes:
 
         # Monthly Flows
         #print 'Box plot of monthly flows'
-        #Figs.make_box(csvs, var, 'mean_monthly')
+        Figs.make_box(csvs, var, 'mean_monthly')
 
         # Annual Flows
         for stat in ['mean_annual', 'quantile']:
@@ -113,8 +114,8 @@ for mode in modes:
                 #print 'Violin ',
                 #Figs.make_violin(csvs, var, stat)
 
-                #print 'Box'
-                Figs.make_box(csvs, var, stat, normalize_to_baseline=True)
+                norm = True if mode != 'ssf' else False
+                Figs.make_box(csvs, var, stat, normalize_to_baseline=norm)
 
             # Make plots of quantile flows for the gages
             else:
@@ -124,7 +125,7 @@ for mode in modes:
 
                         print 'Time series ',
                         #Figs.make_timeseries(csvs, var, stat, quantile=quantile, baseline=True)
-                        Figs.make_timeseries_hexbin(csvs, var, stat, quantile=quantile, baseline=True)
+                        Figs.make_timeseries_hexbin(csvs, var, stat, quantile=quantile, baseline=True, vmax=10)
 
                         #print 'Violin ',
                         #Figs.make_violin(csvs, var, stat, quantile=quantile)
