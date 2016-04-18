@@ -196,8 +196,11 @@ def aggregate(var,varlist,results_folder,mode,spinup,**kwargs):
     GCMs=[]
     uzf_gage=False
     for z in zipfiles:
-        
-        zfile=zipfile.ZipFile(os.path.join(results_folder,z))
+
+        path = os.path.join(results_folder, z)
+        if os.path.getsize(path) == 0:
+            continue
+        zfile=zipfile.ZipFile(path)
         statvarfile=[f for f in zfile.namelist() if 'statvar' in f][0]
         
         var_inds=np.where(np.array(varlist)==var)[0][0]

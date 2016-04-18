@@ -82,7 +82,7 @@ class ReportFigures():
         if not os.path.isdir(plots_folder):
             os.makedirs(plots_folder)
 
-        print "\ngetting info on {} variables...".format(mode)
+        print("\ngetting info on {} variables...".format(mode))
         varlist = GSFu.getvars(aggregated_results_folder, mode)
         varlist = [v for v in varlist if v not in exclude]
 
@@ -364,11 +364,11 @@ class ReportFigures():
         for d in range(len(self.dates)):
             handles.append(plt.Rectangle((0, 0), 1, 1, fc=self.box_colors[d]))
             labels.append(self.dates[d])
-        handles.append(plt.Line2D(range(10), range(10), color='r', linewidth=2))
+        handles.append(plt.Line2D(list(range(10)), list(range(10)), color='r', linewidth=2))
         labels.append('Baseline conditions ({}-{})'.format(self.baseline_period[0], self.baseline_period[1]))
-        handles.append(plt.Line2D(range(10), range(10), color='k', linewidth=1, linestyle=':'))
+        handles.append(plt.Line2D(list(range(10)), list(range(10)), color='k', linewidth=1, linestyle=':'))
         labels.append('Upper/lower quartiles')
-        handles.append(plt.Line2D(range(10), range(10), color='k', linewidth=1, linestyle='--'))
+        handles.append(plt.Line2D(list(range(10)), list(range(10)), color='k', linewidth=1, linestyle='--'))
         labels.append('Median')
         handles.append(plt.scatter(1, 1, c='k', s=12, marker='o'))
         labels.append('Values')
@@ -396,11 +396,11 @@ class ReportFigures():
         for d in range(len(self.dates)):
             handles.append(plt.Rectangle((0, 0), 1, 1, fc=self.box_colors[d]))
             labels.append(self.dates[d])
-        handles.append(plt.Line2D(range(10), range(10), color='r', linewidth=0.5))
+        handles.append(plt.Line2D(list(range(10)), list(range(10)), color='r', linewidth=0.5))
         labels.append('Baseline conditions ({}-{})'.format(self.baseline_period[0], self.baseline_period[1]))
-        handles.append(plt.Line2D(range(10), range(10), color='k', linewidth=0.5))
+        handles.append(plt.Line2D(list(range(10)), list(range(10)), color='k', linewidth=0.5))
         labels.append('Boxes represent quartiles;'.format(self.baseline_period[0], self.baseline_period[1]))
-        handles.append(plt.Line2D(range(10), range(10), color='k', linewidth=0.5))
+        handles.append(plt.Line2D(list(range(10)), list(range(10)), color='k', linewidth=0.5))
         labels.append('Whiskers represent 1.5x the interquartile range')
         handles.append(plt.scatter(1, 1, c='k', s=6, marker='D'))
         labels.append('Outliers')
@@ -427,7 +427,7 @@ class ReportFigures():
         handles=[]
         labels=[]
         for scn in ['sresa1b', 'sresa2', 'sresb1']:
-            handles.append(plt.Line2D(range(10), range(10),
+            handles.append(plt.Line2D(list(range(10)), list(range(10)),
                                       color=self.timeseries_properties[scn]['color'],
                                       linewidth=self.timeseries_properties[scn]['lw']))
             labels.append(scn)
@@ -466,7 +466,7 @@ class ReportFigures():
                          nrows_ncols = (1, 3), # creates 2x2 grid of axes
                          axes_pad=0.1) # pad between axes in inch
 
-        scen = self.timeseries_properties.keys()
+        scen = list(self.timeseries_properties.keys())
         for i in range(grid.ngrids):
 
             # background color for min/max
@@ -595,7 +595,7 @@ class ReportFigures():
         text_ylabels = False
         try:
             # only proceed if labels are numbers (there might be a better way to do this)
-            [float(l._text.replace(u'\u2212', '-')) for l in ax.get_xticklabels()]
+            [float(l._text.replace('\u2212', '-')) for l in ax.get_xticklabels()]
             #newxlabels = fix_decimal([fmt.format(float(l._text.replace(u'\u2212', '-'))) for l in ax.get_xticklabels()])
             ax.get_yticks()
             newxlabels = fix_decimal([fmt.format(t) for t in ax.get_yticks()])
@@ -607,7 +607,7 @@ class ReportFigures():
 
         try:
             # only proceed if labels are numbers (there might be a better way to do this)
-            [float(l._text.replace(u'\u2212', '-')) for l in ax.get_yticklabels()]
+            [float(l._text.replace('\u2212', '-')) for l in ax.get_yticklabels()]
             ax.get_yticks()
             newylabels = fix_decimal([fmt.format(t) for t in ax.get_yticks()])
             #newylabels = fix_decimal([fmt.format(float(l._text.replace(u'\u2212', '-'))) for l in ax.get_yticklabels()])
@@ -617,8 +617,8 @@ class ReportFigures():
             pass
 
         if text_xlabels and text_ylabels:
-            print "Warning: Tick labels on both x and y axes are text. Or the canvas may not be drawn, in which" \
-                  "case the tick formatter won't work. Check the code for generating the plot."
+            print("Warning: Tick labels on both x and y axes are text. Or the canvas may not be drawn, in which" \
+                  "case the tick formatter won't work. Check the code for generating the plot.")
 
 
 #############
@@ -651,7 +651,7 @@ def thousands_sep(ax):
 def ignore_outliers_in_yscale(dfs, factor=2):
     # rescales plot to next highest point if the highest point exceeds the next highest by specified factor
     largest = np.array([])
-    for df in dfs.itervalues():
+    for df in dfs.values():
         top_two = np.sort(df.fillna(0).values.flatten())[-2:]
         largest = np.append(largest, top_two)
     largest = np.sort(largest)
@@ -728,7 +728,7 @@ def timeseries(dfs, ylabel='', props=None, Synthetic_timepers=[],
     synthetic_timeper_alpha = 1 - (alpha * 0.4)
 
 
-    for dfname in dfs.iterkeys():
+    for dfname in dfs.keys():
 
         alpha = props[dfname]['alpha']
         color = props[dfname]['color']
@@ -737,7 +737,7 @@ def timeseries(dfs, ylabel='', props=None, Synthetic_timepers=[],
         try:
             dfs[dfname].mean(axis=1).plot(color=color, label=dfname, linewidth=1, zorder=zorder, ax=ax)
         except TypeError:
-            print "Problem plotting timeseries. Check that spinup value was not entered for plotting after spinup results already discarded during aggregation."
+            print("Problem plotting timeseries. Check that spinup value was not entered for plotting after spinup results already discarded during aggregation.")
 
         ax.fill_between(dfs[dfname].index, dfs[dfname].max(axis=1), dfs[dfname].min(axis=1),
                         alpha=alpha, color=color, edgecolor='k', linewidth=0.25, zorder=zorder*100)
@@ -776,7 +776,7 @@ def timeseries(dfs, ylabel='', props=None, Synthetic_timepers=[],
 
     # prevent the shaded time periods of no data from overlapping the neatline
     # (spines is a dictionary)
-    for side in ax.spines.iterkeys():
+    for side in ax.spines.keys():
         ax.spines[side].set_zorder(200)
 
     plt.tight_layout()
@@ -830,7 +830,7 @@ def timeseries_hexbin(dfs, ylabel='', props=None, Synthetic_timepers=[],
     hb = ax.get_children()[0] # assuming the polycollection will always be at 0
     cb = plt.colorbar(hb, label='Bin counts', pad=0.01)
 
-    for scn, p in props.items():
+    for scn, p in list(props.items()):
 
         lw = p.get('lw', 1)
         l = plt.plot(dfm.index.year, dfm[scn].tolist(),
@@ -863,7 +863,7 @@ def timeseries_hexbin(dfs, ylabel='', props=None, Synthetic_timepers=[],
 
     # prevent the shaded time periods of no data from overlapping the neatline
     # (spines is a dictionary)
-    for side in ax.spines.iterkeys():
+    for side in ax.spines.keys():
         ax.spines[side].set_zorder(200)
 
     plt.tight_layout()
