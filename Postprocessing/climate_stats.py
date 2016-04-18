@@ -10,7 +10,7 @@ def moving_avg_from_csvs(csvs, gcms, window, spinup, function='boxcar', time_uni
 
     dfs = {}
 
-    for csv in csvs.iterkeys():
+    for csv in csvs.keys():
         # load csvs into Pandas dataframes; reduce to columns of interest
         df = pd.read_csv(csvs[csv], index_col='Date', parse_dates=True)
 
@@ -45,7 +45,7 @@ def annual_timeseries(csvs, gcms, spinup, stat, calc='mean', quantile=None):
 
     dfs = {}
 
-    for csv in csvs.iterkeys():
+    for csv in csvs.keys():
         # load csvs into Pandas dataframes; reduce to columns of interest
         df = pd.read_csv(csvs[csv], index_col='Date', parse_dates=True)
 
@@ -65,7 +65,7 @@ def annual_timeseries(csvs, gcms, spinup, stat, calc='mean', quantile=None):
         # find any years with only one value (due to date convention)
         # reset values for those years to NaN
         an = df.groupby(lambda x: x.year)
-        singles = [group for group in an.groups.keys() if len(an.get_group(group)) == 1]
+        singles = [group for group in list(an.groups.keys()) if len(an.get_group(group)) == 1]
 
         # calculate annual mean or quantiles
         if stat == 'mean_annual':
@@ -74,7 +74,7 @@ def annual_timeseries(csvs, gcms, spinup, stat, calc='mean', quantile=None):
             an = df.groupby(lambda x: x.year).quantile(q=quantile, axis=0)
 
         # reset index from int to datetime (have to map to str first)
-        an.index = pd.to_datetime(map(str, an.index)).values
+        an.index = pd.to_datetime(list(map(str, an.index))).values
         an = an.resample('AS')
 
         # blast years with only 1 daily value from above
@@ -117,7 +117,7 @@ def period_stats(csvs, compare_periods, stat, baseline_period=np.array([]),
     dfs = []
 
     # build list of Pandas dataframes, one for each csv.
-    for csv in csvs.iterkeys():
+    for csv in csvs.keys():
         df = pd.read_csv(csvs[csv], index_col='Date', parse_dates=True)
 
         # Rename columns so they're unique.
