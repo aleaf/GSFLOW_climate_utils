@@ -32,14 +32,14 @@ def getvars(results_folder,mode):
     
     # exclude empty files
     fileslist=[]
-    print '\nChecking for empty output files...'
+    print('\nChecking for empty output files...')
     if fromZip:
         for item in zfile.infolist():
             if item.file_size>0:
-                print item.filename
+                print(item.filename)
                 fileslist.append(item.filename)
             else:
-                print 'excluding %s, size=0' %(item.filename)
+                print('excluding %s, size=0' %(item.filename))
         varfile=[f for f in fileslist if mode.lower() in f.lower()][0]
     else:
         fileslist=[f for f in allfiles if f.endswith('.csv')]
@@ -84,15 +84,15 @@ def getvars(results_folder,mode):
         if fromZip:
             uzfdata=zfile.open(varfile).readlines()[1]
             varlist=uzfdata.strip().split()[2:]
-            varlist=[f for f in varlist if f<>'"'] # get rid of double quotes
+            varlist=[f for f in varlist if f!='"'] # get rid of double quotes
         else:
             varlist=list(set([f.split('.')[0] for f in fileslist]))
             
-    print '\nVariables to aggregate:'
+    print('\nVariables to aggregate:')
     # this caused a problem with ggo file bec_lf0.5.ggo
     #varlist=[var.replace('.','') for var in varlist] # get rid of any dots in variable names
     for var in varlist:
-        print var
+        print(var)
     return varlist
 
 
@@ -125,7 +125,7 @@ def save_aggregated(var,aggregated_results_folder,GCMs,var_values,uzf_gage,**kwa
     
     # Function to write stuff out
     def write2output(outfile,GCMs,var_values,scenario):
-        print ' -> saving to %s' %(outfile)
+        print(' -> saving to %s' %(outfile))
         ofp=open(outfile,'w')
         ofp.write('Date')
     
@@ -141,7 +141,7 @@ def save_aggregated(var,aggregated_results_folder,GCMs,var_values,uzf_gage,**kwa
         else:
             valuesdict=var_values[scenario]
             
-        for date in sorted(valuesdict.iterkeys()):
+        for date in sorted(valuesdict.keys()):
             ofp.write(str(date))
             for GCM in GCMs:
                 try:
@@ -156,9 +156,9 @@ def save_aggregated(var,aggregated_results_folder,GCMs,var_values,uzf_gage,**kwa
         var=var+'-uzfgage'
         
     #var_values[scenario][timeper][date][GCM]
-    for scenario in var_values.iterkeys():
+    for scenario in var_values.keys():
         if separate:
-            for timeper in var_values[scenario].iterkeys():
+            for timeper in var_values[scenario].keys():
                 outfile=os.path.join(aggregated_results_folder,'%s.%s.%s.csv' %(var,scenario,timeper))
                 
                 write2output(outfile,GCMs,var_values,scenario)
@@ -177,13 +177,13 @@ def aggregate(var,varlist,results_folder,mode,spinup,**kwargs):
 
     try:
         separate=kwargs['separate']
-        print '(separate csv for each time period)'
+        print('(separate csv for each time period)')
     except KeyError:
         separate=False
-        print 'time periods combined (one csv per %s variable-scenario)' %(mode)
+        print('time periods combined (one csv per %s variable-scenario)' %(mode))
         pass
     
-    print var
+    print(var)
     allfiles=os.listdir(results_folder)
     zipfiles=[f for f in allfiles if f.endswith('.zip')]    
     
@@ -267,7 +267,7 @@ def aggregate(var,varlist,results_folder,mode,spinup,**kwargs):
                     date=t0+dt.timedelta(float(splitline[0])-1)
             elif mode=='ssf':
                 varline=splitline[0]
-                if varline<>var:
+                if varline!=var:
                     continue
                 date=dt.datetime.strptime(splitline[1],'%m/%d/%Y')-dt.timedelta(1)
             elif mode=='uzf':
@@ -313,7 +313,7 @@ def get_var_files(var, aggregated_results_folder, **kwargs):
         varfiles=sorted(varfiles)[:num_scenarios] # in case var name is also contained in other var names, sorting should leave the simplest case at the top
     
     Files=[]
-    if Scenarios<>'all':
+    if Scenarios!='all':
         for scen in Scenarios:
             files=[f for f in varfiles if scen in f or '20c3m' in f]
             Files=Files+files
@@ -372,7 +372,7 @@ def plot_moving_avg_minmax(csvs,cols,timeunits,window,function,title,ylabel,colo
         try:
             ax=smoothed.mean(axis=1).plot(color=colors[i],label=scenario)
         except TypeError:
-            print "Problem plotting timeseries. Check that spinup value was not entered for plotting after spinup results already discarded during aggregation."
+            print("Problem plotting timeseries. Check that spinup value was not entered for plotting after spinup results already discarded during aggregation.")
         
         ax.fill_between(smoothed.index,smoothed.max(axis=1),smoothed.min(axis=1),alpha=transp[i],color=colors[i],edgecolor='k',linewidth=0.25)
     
@@ -396,7 +396,7 @@ def plot_moving_avg_minmax(csvs,cols,timeunits,window,function,title,ylabel,colo
     # shade periods for which synthetic data were generated
     if len(Synthetic_timepers)>0:
         for per in Synthetic_timepers:
-            tstart,tend=map(int,per.split('-'))
+            tstart,tend=list(map(int,per.split('-')))
             daterange=pd.date_range(start=dt.datetime(tstart,1,1),end=dt.datetime(tend,1,1))
             # make vectors of ymax values and ymin values for length of daterange
             ymax,ymin=np.ones(len(daterange))*plt.ylim()[1],np.ones(len(daterange))*plt.ylim()[0]
@@ -434,7 +434,7 @@ def plot_q_minmax(csvs,cols,stat,title,ylabel,colors,spinup,scenarios,Synthetic_
         # find any years with only one value (due to date convention)
         # reset values for those years to NaN
         an=df.groupby(lambda x: x.year)
-        singles=[group for group in an.groups.keys() if len(an.get_group(group))==1]
+        singles=[group for group in list(an.groups.keys()) if len(an.get_group(group))==1]
         
         # calculate annual flow quantile
         if stat=='mean_annual':
@@ -445,7 +445,7 @@ def plot_q_minmax(csvs,cols,stat,title,ylabel,colors,spinup,scenarios,Synthetic_
             an=df.groupby(lambda x: x.year).quantile(q=0.9,axis=0)
         
         # reset index from int to datetime (have to map to str first)
-        an.index=pd.to_datetime(map(str,an.index)).values
+        an.index=pd.to_datetime(list(map(str,an.index))).values
         an=an.resample('AS')
         
         # blast years with only 1 daily value from above
@@ -477,7 +477,7 @@ def plot_q_minmax(csvs,cols,stat,title,ylabel,colors,spinup,scenarios,Synthetic_
     # shade periods for which synthetic data were generated
     if len(Synthetic_timepers)>0:
         for per in Synthetic_timepers:
-            tstart,tend=map(int,per.split('-'))
+            tstart,tend=list(map(int,per.split('-')))
             daterange=pd.date_range(start=dt.datetime(tstart,1,1),end=dt.datetime(tend,1,1))
             ymax,ymin=np.ones(len(daterange))*plt.ylim()[1],np.ones(len(daterange))*plt.ylim()[0]
             syn=ax.fill_between(daterange,ymax,ymin,color='0.9',zorder=0)     
@@ -526,7 +526,7 @@ def calc_boxstats(csvs, dates, ranges, baseline_dates, stat):
             df[i].columns=new_cols
         
         # concatenate,resample, trim to tstart,tend
-        cdf=pd.concat(df.values(),axis=1)
+        cdf=pd.concat(list(df.values()),axis=1)
         cdf=cdf.resample('D')
         cdf=cdf[tstart:tstop]
         
@@ -565,11 +565,11 @@ def calc_boxstats(csvs, dates, ranges, baseline_dates, stat):
     # collate time periods by stat time period
     collated=[]
     try: # for monthly plots
-        for month in groupsbyperiod[d].iterkeys():
-            for d in groupsbyperiod.iterkeys():
+        for month in groupsbyperiod[d].keys():
+            for d in groupsbyperiod.keys():
                 collated.append(groupsbyperiod[d][month])
     except AttributeError: # annual plot (no months)
-        for d in groupsbyperiod.iterkeys():
+        for d in groupsbyperiod.keys():
             collated.append(groupsbyperiod[d])
         
     # get 20th cent baseline data
@@ -669,7 +669,7 @@ def box_plot(collated,Baseline,dates,ranges,baseline_dates,stat,title,ylabel):
     # fill in the boxes
     boxColors = ['darkkhaki','royalblue','LawnGreen','DarkRed','Gold'] # html color names
     numBoxes = len(collated)
-    medians = range(numBoxes)
+    medians = list(range(numBoxes))
     for i in range(numBoxes):
         box = bp['boxes'][i]
         boxX = []
@@ -677,7 +677,7 @@ def box_plot(collated,Baseline,dates,ranges,baseline_dates,stat,title,ylabel):
         for j in range(5):
             boxX.append(box.get_xdata()[j])
             boxY.append(box.get_ydata()[j])
-            boxCoords = zip(boxX,boxY)
+            boxCoords = list(zip(boxX,boxY))
         # Alternate between Dark Khaki and Royal Blue
         k = i % len(dates)
         boxPolygon = Polygon(boxCoords, facecolor=boxColors[k])
@@ -694,13 +694,13 @@ def box_plot(collated,Baseline,dates,ranges,baseline_dates,stat,title,ylabel):
     for d in range(len(dates)):
         handels.append(plt.Rectangle((0, 0), 1, 1, fc=boxColors[d]))
         labels.append('%s-%s' %(int(dates[d]-0.5*ranges),int(dates[d]+0.5*ranges)))
-    handels.append(plt.Line2D(range(5), range(5), color='k', linewidth=2))
+    handels.append(plt.Line2D(list(range(5)), list(range(5)), color='k', linewidth=2))
     labels.append('median')
-    handels.append(plt.Line2D(range(10), range(10), color='r', linewidth=2))
+    handels.append(plt.Line2D(list(range(10)), list(range(10)), color='r', linewidth=2))
     labels.append('mean %s for %s-%s (Baseline)' %(ylabel.split(',')[0],baseline_dates[0],baseline_dates[1]))
-    handels.append(plt.Line2D(range(5), range(5), color='k', linewidth=0.5))
+    handels.append(plt.Line2D(list(range(5)), list(range(5)), color='k', linewidth=0.5))
     labels.append('90th/10th percentiles; boxes indicate 75th and 25th percentiles')
-    handels.append(plt.Line2D(range(2),range(2),linestyle='none',marker='+'))
+    handels.append(plt.Line2D(list(range(2)),list(range(2)),linestyle='none',marker='+'))
     labels.append('outliers')
     ax.legend(handels,labels,fontsize=8,bbox_to_anchor=(0., -0.3, 1., .102), loc=4,ncol=2,borderaxespad=0.)
 
@@ -855,7 +855,7 @@ def set_plot_titles(var, mode, stat, var_info, aggregated_results_folder, plotty
               'basinhortonian': 'basin_hortonian',
               'unsat_stor': 'unsat_store'}
 
-    if var in kludge.keys():
+    if var in list(kludge.keys()):
         var = kludge[var]
 
 
@@ -960,7 +960,7 @@ def make_var_table(output_folder, var_name_file):
 
         aggregated_results_folder = os.path.join(output_folder, mode)
 
-        for var in var_info.iterkeys():
+        for var in var_info.keys():
 
             for stat in ['mean_monthly', 'mean_annual']:
                 if stat == 'mean_annual':
