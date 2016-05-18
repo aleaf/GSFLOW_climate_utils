@@ -2,6 +2,7 @@ import os
 import climate_plots as cp
 from Figures import ReportFigures
 import pandas as pd
+import matplotlib.pyplot as plt
 
 figures = ReportFigures()
 figures.set_style(style='timeseries', width='single')
@@ -32,6 +33,6 @@ fig, ax = cp.timeseries_hexbin(dfs, ylabel='Growing season length (days)', props
                         Synthetic_timepers=synthetic_timepers,
                         plotstyle=figures.plotstyle, baseline=baseline) # plotstyle dict as argument to override some Seaborn settings
 
-      
+plt.show()
 
 fig.savefig(outpdf, dpi=300)
