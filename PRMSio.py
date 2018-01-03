@@ -46,9 +46,9 @@ class datafile:
         self.scenario = None #os.path.split(self.f)[1].split('.')[1]
         self.gcm = None #os.path.split(self.f)[1].split('.')[0]
 
-        for func, attr in {parse_timeper: 'timeper',
+        for func, attr in list({parse_timeper: 'timeper',
                            parse_scenario: 'scenario',
-                           parse_gcm: 'gcm'}.items():
+                           parse_gcm: 'gcm'}.items()):
             if func is not None:
                 self.__dict__[attr] = func(datafile)
 
@@ -97,7 +97,7 @@ class datafile:
 
 
     def read2df(self):
-        print '\nreading {}...'.format(self.f)
+        print('\nreading {}...'.format(self.f))
 
         # function to read dates from PRMS files
         parse = lambda x: dt.datetime.strptime(x, '%Y %m %d %H %M %S')
@@ -157,7 +157,7 @@ class netCDF4dataset:
         
     def set_extent(self, ncfile, model_extent, model_extent_buffer=1000, reduce=1):
 
-        print 'setting extent to {}\n\tusing points in {}...'.format(model_extent, ncfile)
+        print('setting extent to {}\n\tusing points in {}...'.format(model_extent, ncfile))
         f = netCDF4.Dataset(ncfile)
         
         # read geometry of model extent; project to coordinate system of netCDF data
@@ -180,7 +180,7 @@ class netCDF4dataset:
 
         # get a variable in the file being used to set the extent
         # (must have t, x, y dimensions)
-        varname = [k for k, v in f.variables.items() if len(v.shape) == 3][0]
+        varname = [k for k, v in list(f.variables.items()) if len(v.shape) == 3][0]
         var = f.variables[varname]
         var_rs = np.reshape(var[0, yinds, xinds], (len(X[xinds]) * len(Y[yinds])))
 
@@ -214,7 +214,7 @@ class netCDF4dataset:
 
         df = pd.DataFrame(columns=['point', self.x_col, self.y_col, var_col, self.time_col])
         for ncfile in ncfiles:
-            print('\r{}'.format(ncfile)),
+            print(('\r{}'.format(ncfile)), end=' ')
             f = netCDF4.Dataset(ncfile)
             var = f.variables[var_col]
             for i in range(var.shape[0]):
@@ -253,7 +253,7 @@ class netCDF4dataset:
 
         if self.datetime_output:
             dft['time'] = pd.to_datetime(dft.time.values, unit=self.time_units) + self._toffset
-        dft['point'] = range(len(dft))
+        dft['point'] = list(range(len(dft)))
         dft.index = pd.MultiIndex.from_product([np.unique(dft.time.values), dft.point.values])
 
         return dft
@@ -289,14 +289,14 @@ class netCDF4dataset:
         df = pd.DataFrame({'station': np.arange(len(self.outputX)) + 1,
                            self.x_col: self.outputX,
                            self.y_col: self.outputY})
-        print 'writing station coordinates to {}'.format(out_csv)
+        print('writing station coordinates to {}'.format(out_csv))
         df.to_csv(out_csv, index=False, **kwargs)
 
     def reproject_output(self, output_proj4=None):
 
         self.output_proj4 = output_proj4
         if len(self.outputX) == 0 and output_proj4 is not None:
-            print 'reprojecting output coordinates to:\n{}\n'.format(output_proj4)
+            print('reprojecting output coordinates to:\n{}\n'.format(output_proj4))
             pr1 = pyproj.Proj(self.proj4)
             pr2 = pyproj.Proj(self.output_proj4)
             self.outputX, self.outputY = pyproj.transform(pr1, pr2, self.X, self.Y)
@@ -308,21 +308,22 @@ class netCDF4dataset:
 
     def write_to_dotData(self, df, outfile='climate.data'):
 
-        print 'writing {}'.format(outfile)
+        print('writing {}'.format(outfile))
         df['point2'] = df.point + df.point.max() + 1
         df['point3'] = df.point + df.point2.max() + 1
 
         data = pd.DataFrame(index=df.time.unique())
-        for col, var in {'point': 'tmin', 'point2': 'tmax', 'point3': 'prcp'}.items():
+        for col, var in list({'point': 'tmin', 'point2': 'tmax', 'point3': 'prcp'}.items()):
             pivot = df.pivot(index='time', columns=col, values=var).copy()
             data = data.join(pivot)
 
-        data.sort(axis=1, inplace=True)
+        data.sort_index(axis=1, inplace=True)
         prms_date(data)
 
         f = open(outfile, 'w')
         npoints = len(np.unique(df.point))
-        f.write('tmin {0:.0f}\ntmax {0:.0f}\nprcp {0:.0f}\n'.format(npoints))
+        f.write('#Data file written by GSFLOW_climate_utils\n')
+        f.write('tmin {0:.0f}\ntmax {0:.0f}\nprecip {0:.0f}\n'.format(npoints))
         f.write('#'*40 + '\n')
         data.to_csv(f, sep=' ', header=None, index=False)
 
@@ -330,7 +331,7 @@ class netCDF4dataset:
 class statvarFile(parseFilenames):
 
     def read2df(self):
-        print '\nreading {}...'.format(self.f)
+        print('\nreading {}...'.format(self.f))
 
         # get header information
         self.nstats = int(open(self.f).readline())
@@ -373,9 +374,9 @@ class dotDay:
         self.header = []
 
         # convert frost dates to boolean series (loop seems clunky but not sure how to vectorize this)
-        print '\n\nconverting growing season dates to boolean dataframe...'
+        print('\n\nconverting growing season dates to boolean dataframe...')
         for year in self.df_lf.index:
-            print year,
+            print(year, end=' ')
             l = [self.toBoolean(year, h) for h in (np.arange(nhru) + 1)] # using a list comprehension is MUCH faster than another loop
             transp_yr = pd.DataFrame(l).T # make a DataFrame for the year
             self.df = self.df.append(transp_yr)
@@ -408,7 +409,7 @@ class dotDay:
     def write_output(self, outfile):
 
         ofp = open(outfile, 'w')
-        print '\nwriting output to %s\n' %(outfile)
+        print('\nwriting output to %s\n' %(outfile))
 
         for lines in self.header:
             ofp.write(lines)
